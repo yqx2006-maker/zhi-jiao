@@ -1,0 +1,2716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="description" content="知教：AI＋教育闭环辅导智能体（GOAI 参赛作品）。看题 → 追问卡点 → 引导思考 → 自主验证 → 更新画像；零依赖单文件部署，真实模型与预设剧本双模式明确区分。" />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#2f6df0" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="知教 · AI＋教育闭环辅导智能体（GOAI）" />
+<meta property="og:description" content="面向初中生的长期个性化学习伙伴：追问定位卡点 → 引导自主验证 → 证据式更新学习画像。" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6df0'/%3E%3Ctext x='16' y='23' font-size='17' text-anchor='middle' fill='white'%3E知%3C/text%3E%3C/svg%3E" />
+<title>知教 · AI＋教育闭环辅导智能体（GOAI）</title>
+<script>try{var _t=localStorage.getItem("zhijiao_theme")||"auto",_d=_t==="dark"||(_t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",_d?"dark":"light");}catch(e){}</script>
+<style>
+  :root{
+    color-scheme:light;
+    /* 视觉规范：克制蓝为主色，深蓝灰正文，冷色浅灰背景 */
+    --bg:#eef1f6;            /* 页面背景：轻微冷色浅灰 */
+    --surface:#ffffff;       /* 卡片/浮层 */
+    --surface-2:#f6f8fc;     /* 次级面（对话区、侧栏内分组） */
+    --surface-3:#eaf0fb;     /* 选中/高亮浅蓝 */
+    --ink:#243042;           /* 正文：深蓝灰，非纯黑 */
+    --sub:#5d6b7e;           /* 次要文字 */
+    --faint:#5f6b7d;         /* 更弱（提亮保证 4.5:1 对比度） */
+    --brand:#2f6df0;         /* 主强调蓝：克制，非过饱和 */
+    --brand-ink:#1f4fb0;     /* 蓝色文字（加深可读） */
+    --line:#dde3ec;          /* 描边 */
+    --ok:#2c9d6e;            /* 成功/在线 */
+    --warn:#d98a1f;          /* 警告 */
+    --danger:#d9534f;        /* 错误 */
+    --r-lg:18px; --r-md:12px; --r-sm:9px; --r-pill:999px;
+    --shadow-float:0 8px 24px rgba(31,45,70,.12);
+    --shadow-stick:0 -2px 12px rgba(31,45,70,.06);
+    --t:220ms;               /* 动效 180-260ms */
+    --tap:40px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);
+    font-size:clamp(13px,0.28vw + 10.4px,15px);line-height:1.6; /* 流式字号：小屏不小到难读、大屏不膨胀 */
+    -webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column; /* 顶栏 + 主区 + 页脚 纵向排布 */
+  }
+  button{font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer;
+    border:1px solid transparent;background:none;border-radius:var(--r-sm);
+    min-height:var(--tap);transition:background var(--t),border-color var(--t),color var(--t);}
+  button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+  .icon{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .skip-link{position:fixed;top:-64px;left:12px;z-index:120;background:var(--brand);color:#fff;
+    padding:9px 16px;border-radius:0 0 var(--r-sm) var(--r-sm);font-size:13px;font-weight:600;
+    box-shadow:var(--shadow-float);transition:top .18s}
+  .skip-link:focus{top:0;outline:none}
+  .tabnum{font-variant-numeric:tabular-nums}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--surface);
+    border-bottom:1px solid var(--line);height:57px;box-sizing:border-box}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{width:36px;height:36px;border-radius:var(--r-md);background:var(--brand);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+  .brand-txt{display:flex;flex-direction:column;min-width:0}
+  .brand-txt h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.5px}
+  .brand-txt span{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tech-tag{font-size:12px;color:var(--brand-ink);background:var(--surface-3);
+    border:1px solid #d3e0fb;padding:3px 9px;border-radius:var(--r-pill);font-weight:600;white-space:nowrap;
+    max-width:min(280px,38vw);overflow:hidden;text-overflow:ellipsis}
+  .tech-tag.script{color:#8a5a12;background:#fdf3e3;border-color:#f0dcb4}  /* 剧本演示模式徽章：琥珀色区分真实模型 */
+  .ctx-pill{font-size:12px;color:var(--sub);background:var(--surface-2);border:1px solid var(--line);
+    padding:5px 11px;border-radius:var(--r-pill);white-space:nowrap}
+  .ctx-pill b{color:var(--ink);font-weight:600}
+  .spacer{flex:1}
+  .dev{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sub);
+    background:var(--surface-2);border:1px solid var(--line);padding:5px 9px;border-radius:var(--r-pill)}
+  .dev .led{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+  .dev.on .led{background:var(--ok)}
+  .dev.off .led{background:var(--danger)}
+  .dev.load .led{background:var(--warn);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .top-act{display:flex;align-items:center;gap:8px}
+  .icon-btn{width:var(--tap);height:var(--tap);border:1px solid var(--line);background:var(--surface);
+    border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--sub)}
+  .icon-btn:hover{background:var(--surface-2);color:var(--ink);border-color:#cdd6e2}
+  .icon-btn:active{transform:translateY(1px)}
+  .icon-btn[aria-pressed="true"]{background:var(--surface-3);color:var(--brand-ink);border-color:#cfe0fb}
+  .btn{border-radius:var(--r-sm);padding:0 14px;height:var(--tap);background:var(--brand);color:#fff;
+    border:1px solid var(--brand);font-weight:600;display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{background:#2a62d8}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{background:var(--surface-2);border-color:#cdd6e2}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  /* ---------- 布局：Flex 三栏（兼容性优于 Grid） ---------- */
+  .layout{flex:1;min-height:0;display:flex;gap:14px;
+    max-width:1440px;width:100%;margin:0 auto;padding:14px;box-sizing:border-box}
+  .col{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    display:flex;flex-direction:column;overflow:hidden}
+  .col.left{flex:0 0 240px}
+  .col.right{flex:0 0 320px}
+  .col.chat{flex:1 1 auto;min-width:0}
+  .col-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;
+    gap:8px;font-weight:700;font-size:14px;flex:none}
+  .col-head .icon{color:var(--brand)}
+  .col-body{padding:14px 16px;overflow:auto;flex:1;min-height:0}
+
+  /* 左栏 */
+  .field{margin-bottom:18px}
+  .field>label{display:block;font-size:12px;color:var(--sub);font-weight:600;margin-bottom:7px;
+    text-transform:none;letter-spacing:.2px}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px}
+  .seg button{flex:0 0 auto;min-height:32px;border-radius:7px;font-size:13px;color:var(--sub);
+    background:none;border:none;padding:5px 10px;white-space:nowrap;
+    display:inline-flex;align-items:center;justify-content:center}
+  .seg button[aria-checked="true"]{background:var(--surface);color:var(--brand-ink);font-weight:600;
+    box-shadow:0 1px 2px rgba(31,45,70,.08)}
+  .seg button:hover{color:var(--ink)}
+  .subj-list{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-pill);
+    padding:6px 13px;font-size:13px;color:var(--sub);min-height:34px}
+  .chip[aria-checked="true"]{background:var(--surface-3);border-color:#cfe0fb;color:var(--brand-ink);font-weight:600}
+  .chip:hover{border-color:#cdd6e2;color:var(--ink)}
+  .switch-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px}
+  .switch-row .lab{font-size:13px;color:var(--ink)}
+  .switch-row .lab small{display:block;color:var(--faint);font-size:11px}
+  .switch{position:relative;width:42px;height:24px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .switch .track{position:absolute;inset:0;background:var(--line);border-radius:var(--r-pill);transition:background var(--t)}
+  .switch .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;
+    transition:left var(--t);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch input:checked + .track{background:var(--brand)}
+  .switch input:checked + .track + .knob{left:21px}
+  .switch input:focus-visible + .track{outline:2px solid var(--brand);outline-offset:2px}
+  .recent{font-size:13px;color:var(--sub);background:var(--surface-2);border:1px dashed var(--line);
+    border-radius:var(--r-sm);padding:10px 12px}
+  .recent b{color:var(--ink)}
+  .recent-item{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:7px 9px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);margin-top:6px}
+  .recent-item b{font-weight:600;font-size:13px}
+  .recent-ts,.recent-now{font-size:12px;color:var(--faint);white-space:nowrap}
+  .recent-now{color:var(--brand-ink);font-weight:600}
+  .recent .none{color:var(--faint)}
+button.recent-item{width:100%;font:inherit;cursor:pointer;text-align:left}
+.recent-item:hover{border-color:var(--brand);background:#f7faff}
+.recent-item:active{transform:translateY(1px)}
+
+  /* 中栏 */
+  .chat{min-height:0;display:flex;flex-direction:column;flex:1;height:100%}
+  .chat-body{flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth;min-height:0}
+  .welcome{background:linear-gradient(180deg,#f3f7ff,var(--surface));border:1px solid var(--line);
+    border-radius:var(--r-md);padding:18px 18px 16px}
+  .welcome h2{margin:0 0 4px;font-size:19px}
+  .welcome p{margin:0 0 14px;color:var(--sub);font-size:13px}
+  .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .quick button{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
+    padding:12px 13px;display:flex;flex-direction:column;gap:3px;min-height:auto}
+  .quick button:hover{border-color:var(--brand);background:#f7faff}
+  .quick button .qt{font-weight:600;color:var(--ink);font-size:13.5px;display:flex;align-items:flex-start;gap:7px}
+  .quick button .qt .icon{width:16px;height:16px;color:var(--brand);margin-top:3px;flex:none}
+  .quick button .qd{font-size:12px;color:var(--sub)}
+  .quick .demo-card{grid-column:1 / -1;background:var(--surface-3);border-color:#cfe0fb}
+  .quick .demo-card .qd{color:var(--brand-ink)}
+
+  /* 消息 */
+  .msg{display:flex;flex-direction:column;max-width:82%;min-width:0}
+  .msg.me{align-self:flex-end;align-items:flex-end}
+  .msg.ai{align-self:flex-start}
+  .msg .who{font-size:11px;color:var(--faint);margin:0 2px 4px}
+  .bubble{border-radius:var(--r-md);padding:11px 14px;font-size:14px;line-height:1.65;white-space:pre-wrap;
+    word-break:break-word;overflow-wrap:anywhere;border:1px solid var(--line);background:var(--surface)}
+  .msg.ai .bubble{border-top-left-radius:5px}
+  .msg.me .bubble{background:var(--surface-3);border-color:#cfe0fb;border-top-right-radius:5px;color:var(--ink)}
+  .thumb{margin-top:8px;max-width:220px;border-radius:var(--r-sm);border:1px solid var(--line);display:block}
+  /* 结构化 AI 块 */
+  .ai-block{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+  .ai-block .blk{padding:10px 14px;border-bottom:1px solid var(--line)}
+  .ai-block .blk:last-child{border-bottom:none}
+  .ai-block .blk .h{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--brand-ink)}
+  .ai-block .blk .h .icon{width:15px;height:15px}
+  .ai-block .blk .c{font-size:14px;color:var(--ink);margin-top:3px}
+  .ai-block .blk.try{background:var(--surface-2)}
+  .ai-block .blk .note{margin-top:7px;padding-top:6px;border-top:1px dashed var(--line);
+    font-size:13px;color:var(--faint);line-height:1.55}  /* 「一步提示」降级后的灰色小字附注 */
+  .ai-block .blk.fig{padding:6px 14px 10px;background:var(--surface-2)}
+  .ai-block .blk.fig svg{display:block;width:100%;max-width:360px;height:auto;margin:0 auto}
+  /* 教学推理链（Agent 推理可视化，GOAI 评审关注点） */
+  .reason{border:1px dashed #c5d4f0;background:#f5f8ff;border-radius:var(--r-md);overflow:hidden}
+  .reason summary{display:flex;align-items:center;gap:7px;padding:8px 13px;font-size:12.5px;font-weight:700;
+    color:var(--brand-ink);cursor:pointer;list-style:none}
+  .reason summary::-webkit-details-marker{display:none}
+  .reason summary .icon{width:15px;height:15px}
+  .reason summary .rsub{font-weight:400;color:var(--faint);font-size:12px}
+  .reason summary::after{content:"▾";margin-left:auto;color:var(--faint);font-size:11px;transition:transform var(--t)}
+  .reason:not([open]) summary::after{transform:rotate(-90deg)}
+  .reason .rbody{padding:2px 13px 11px;display:flex;flex-direction:column;gap:7px}
+  .reason .ritem{font-size:12.5px;color:var(--sub);display:flex;gap:8px;line-height:1.55}
+  .reason .ritem b{color:var(--ink);flex:none}
+  /* 练习卡 */
+  .quiz{margin-top:6px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2);padding:12px 14px}
+  .quiz .q{font-size:14px;font-weight:600}
+  .quiz .opts{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+  .quiz .opt{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--surface);
+    border-radius:var(--r-sm);padding:9px 11px;font-size:13.5px;min-height:var(--tap);text-align:left}
+  .quiz .opt:hover{border-color:var(--brand)}
+  .quiz .opt .mk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub)}
+  .quiz .opt.correct{border-color:var(--ok);background:#eafaf2;color:var(--ink)}
+  .quiz .opt.correct .mk{background:var(--ok);border-color:var(--ok);color:#fff}
+  .quiz .opt.wrong{border-color:var(--danger);background:#fdeeee}
+  .quiz .feedback{margin-top:10px;font-size:13px;border-radius:var(--r-sm);padding:9px 11px;display:none;white-space:pre-line}
+  .quiz .feedback.show{display:block}
+  .quiz .feedback.ok{background:#eafaf2;color:#1d7a52}
+  .quiz .feedback.no{background:#fdeeee;color:#a83d3a}
+  /* 生成中 */
+  .typing{display:inline-flex;gap:4px;align-items:center;padding:4px 0}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--faint);display:inline-block;animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+  /* 错误条（不用 alert） */
+  .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(20px);
+    background:#243042;color:#fff;padding:11px 16px;border-radius:var(--r-md);font-size:13px;
+    box-shadow:var(--shadow-float);opacity:0;pointer-events:none;transition:opacity var(--t),transform var(--t);z-index:60;max-width:90vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:#b23b38}
+  .toast.ok{background:#1f7a52}
+  .errbar{border:1px solid #f0c9c7;background:#fdeeee;color:#a83d3a;border-radius:var(--r-sm);
+    padding:10px 12px;font-size:13px;display:none;align-items:flex-start;gap:8px}
+  .errbar.show{display:flex}
+  .errbar .icon{width:16px;height:16px;flex:none;margin-top:1px}
+  .err-retry{margin-left:auto;flex:none;border:1px solid #e5b7b5;background:#fff;color:#a83d3a;
+    border-radius:var(--r-sm);padding:3px 12px;font-size:12px;min-height:0;font-weight:600}
+  .err-retry:hover{background:#fff5f5;border-color:#d98a86}
+
+  /* ---------- 页脚 ---------- */
+  .app-foot{flex:none;display:flex;align-items:center;gap:14px;padding:7px 18px;
+    background:var(--surface);border-top:1px solid var(--line);font-size:12px;color:var(--faint);flex-wrap:wrap}
+  .app-foot .spacer{flex:1}
+  .app-foot a,.app-foot button.foot-link{color:var(--sub);text-decoration:none;display:inline-flex;align-items:center;gap:4px;
+    background:none;border:none;padding:0;min-height:0;font-size:inherit;cursor:pointer}
+  .app-foot a:hover,.app-foot button.foot-link:hover{color:var(--brand-ink);text-decoration:underline}
+  @media(max-width:560px){
+    .app-foot{font-size:11px;padding:6px 12px;gap:10px}
+    .app-foot .foot-hide-sm{display:none}
+    .pv-grid{grid-template-columns:1fr !important} /* 「配置模型」自定义表单窄屏单列 */
+  }
+
+  /* 输入区：吸附底部 */
+  .composer{position:relative;background:var(--surface);border-top:1px solid var(--line);
+    box-shadow:var(--shadow-stick);padding:10px 16px 12px;flex:none}
+  .composer .attach{display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap}
+  .attach-btn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--sub);
+    border:1px solid var(--line);background:var(--surface-2);border-radius:var(--r-pill);padding:5px 11px;min-height:34px}
+  .attach-btn:hover{border-color:var(--brand);color:var(--brand-ink)}
+  .attach-btn.rec{background:var(--danger);color:#fff;border-color:var(--danger)}
+  .attach-btn:disabled{opacity:.5;cursor:not-allowed}
+  .chips-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .fchip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-3);border:1px solid #cfe0fb;
+    color:var(--brand-ink);border-radius:var(--r-pill);padding:4px 6px 4px 10px;font-size:12px}
+  .fchip button{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--brand-ink)}
+  .fchip button:hover{background:var(--surface-3)}
+  .input-line{display:flex;align-items:flex-end;gap:10px}
+  .add-menu{position:relative}
+  .add-pop{position:absolute;bottom:46px;left:0;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r-md);box-shadow:var(--shadow-float);padding:6px;display:none;flex-direction:column;gap:2px;min-width:160px}
+  .add-pop.show{display:flex}
+  .add-pop button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 11px;border-radius:var(--r-sm);font-size:13px;min-height:var(--tap)}
+  .add-pop button:hover{background:var(--surface-2)}
+  .add-pop .icon{color:var(--brand)}
+  textarea#input{flex:1;resize:none;border:1px solid var(--line);border-radius:var(--r-md);padding:10px 13px;
+    font-size:14px;font-family:inherit;line-height:1.5;max-height:130px;min-height:42px;outline:none;background:var(--surface-2);
+    color:var(--ink);overflow-y:auto}
+  textarea#input:focus{border-color:var(--brand);background:var(--surface)}
+  textarea#input::placeholder{color:var(--faint)}
+  .send-btn{width:42px;height:42px;border-radius:var(--r-md);background:var(--brand);color:#fff;border:1px solid var(--brand);
+    display:flex;align-items:center;justify-content:center;flex:none}
+  .send-btn:hover{background:#2a62d8}
+  .send-btn:active{transform:translateY(1px)}
+  .send-btn:disabled{background:var(--line);border-color:var(--line);color:var(--faint);cursor:not-allowed}
+  .composer .hint{flex:none;font-size:12px;color:var(--sub);margin-top:7px}
+  .stop-btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);height:42px;
+    padding:0 13px;display:none;align-items:center;gap:7px;font-size:13px;color:var(--sub);flex:none}
+  .stop-btn.show{display:inline-flex}
+  .stop-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+  /* 右栏：学习画像 */
+  .profile-empty{background:var(--surface-2);border:1px dashed var(--line);border-radius:var(--r-md);
+    padding:13px 14px;font-size:13px;color:var(--sub);margin-bottom:12px}
+  .profile-empty b{color:var(--ink)}
+  .observe{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+  .observe li{font-size:12.5px;color:var(--sub);display:flex;gap:8px;align-items:flex-start}
+  .observe li .dot{width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:7px;flex:none}
+  .ppart{margin-bottom:14px}
+  .ppart>.h{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--brand-ink);
+    margin-bottom:5px}
+  .ppart>.h .icon{width:15px;height:15px}
+  .ppart>.body{font-size:13.5px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:10px 12px;line-height:1.55}
+  .ppart.changed>.body{border-color:#bfe0cf;background:#f1fbf6}
+  .ppart.changed{animation:fadein var(--t) ease}
+  @keyframes fadein{from{opacity:.3}to{opacity:1}}
+  .stage{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:2px}
+  .stage .s{font-size:12px;color:var(--faint);display:inline-flex;align-items:center;gap:5px}
+  .stage .s .d{width:9px;height:9px;border-radius:50%;background:var(--line)}
+  .stage .s.done{color:var(--ok)}.stage .s.done .d{background:var(--ok)}
+  .stage .s.now{color:var(--brand-ink);font-weight:600}.stage .s.now .d{background:var(--brand)}
+  .updated-badge{display:none;align-items:center;gap:6px;font-size:12px;color:var(--ok);
+    background:#eafaf2;border:1px solid #c4ecd8;border-radius:var(--r-pill);padding:4px 10px;margin-bottom:12px}
+  .updated-badge.show{display:inline-flex}
+  .updated-badge .icon{width:14px;height:14px}
+
+  /* 遮罩/抽屉 */
+  .scrim{position:fixed;inset:0;background:rgba(20,30,50,.4);opacity:0;pointer-events:none;transition:opacity var(--t);z-index:40}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;bottom:0;width:300px;max-width:86vw;background:var(--surface);
+    border-right:1px solid var(--line);transform:translateX(-100%);transition:transform var(--t);z-index:50;
+    display:flex;flex-direction:column}
+  .drawer.right{right:0;left:auto;border-right:none;border-left:1px solid var(--line);transform:translateX(100%)}
+  .drawer.show{transform:translateX(0)}
+  .drawer .dhead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .drawer .dbody{padding:14px 16px;overflow:auto;flex:1}
+
+  /* 弹窗（新建对话确认） */
+  .modal{position:fixed;inset:0;background:rgba(20,30,50,.4);display:none;align-items:center;justify-content:center;z-index:70}
+  .modal.show{display:flex}
+  .modal-box{background:var(--surface);border-radius:var(--r-lg);padding:20px;width:min(420px,92vw);
+    box-shadow:var(--shadow-float)}
+  .modal-box h3{margin:0 0 8px;font-size:16px}
+  .modal-box p{margin:0 0 16px;font-size:13.5px;color:var(--sub)}
+  .modal-box textarea{width:100%;height:84px;border:1px solid var(--line);border-radius:var(--r-sm);
+    padding:10px;font-family:inherit;font-size:13px;background:var(--surface-2);resize:vertical}
+  .modal-act{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+
+  /* 预设案例引导按钮（剧本模式自由输入时给出，避免死路） */
+  .case-btns{display:flex;flex-direction:column;gap:8px}
+  .case-btn{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--line);
+    background:var(--surface);border-radius:var(--r-sm);padding:10px 12px;min-height:auto}
+  .case-btn:hover{border-color:var(--brand);background:#f7faff}
+  .case-btn b{font-size:11px;color:#8a5a12;background:#fdf3e3;border:1px solid #f0dcb4;
+    border-radius:var(--r-pill);padding:1px 8px;align-self:flex-start;font-weight:600}
+  .case-btn span{font-size:14px;font-weight:600;color:var(--ink)}
+  .case-btn small{font-size:12px;color:var(--sub)}
+
+  /* ---------- 响应式 ---------- */
+  /* 平板/手机：左右栏收为抽屉，主聊天区独占全宽；桌面折叠按钮隐藏 */
+  @media(max-width:1100px){
+    .layout{gap:0;padding:10px}
+    .col.left,.col.right{display:none !important}
+    .col.chat{width:100%;flex:1 1 auto;min-width:0}
+    .left-trigger,.right-trigger{display:inline-flex}
+    #leftToggle{display:none}
+    .chat{margin:0}
+  }
+  @media(min-width:1101px){
+    .left-trigger,.right-trigger{display:none}
+    /* 三栏都显示的宽屏：折叠左栏（仅桌面生效，不得覆盖移动端隐藏规则） */
+    .layout.left-collapsed .col.left{display:none}
+    .layout.left-collapsed .col.chat{flex:1 1 auto}
+    .layout.left-collapsed .col.right{flex:0 0 320px;display:flex}
+  }
+  @media(max-width:980px){
+    .quick{grid-template-columns:1fr}
+  }
+  @media(max-width:560px){
+    .topbar{gap:8px;padding:8px 12px}
+    .brand-txt span{display:none}
+    .ctx-pill{display:none}
+    /* 模式徽章保留可见（证据边界不在窄屏隐藏），仅缩小 */
+    .tech-tag{font-size:11px;padding:2px 7px;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+    .chat-body{padding:14px 12px}
+    .msg{max-width:90%}
+    .composer{padding:9px 12px 10px}
+  }
+  /* 深色模式：由 <html data-theme="dark"> 控制（JS 负责“跟随系统/手动”映射），含画像与错误条的可读性修复 */
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#10141c; --surface:#181e29; --surface-2:#1e2533; --surface-3:#22304a;
+    --ink:#e7ebf3; --sub:#9aa7ba; --faint:#8b97ab;
+    --line:#2b3447; --brand:#4d82f5; --brand-ink:#a9c2ff;
+    --shadow-float:0 8px 24px rgba(0,0,0,.45);
+    --shadow-stick:0 -2px 12px rgba(0,0,0,.35);
+  }
+  :root[data-theme="dark"] .welcome{background:linear-gradient(180deg,#1a2333,var(--surface))}
+  :root[data-theme="dark"] .reason{border-color:#33415e;background:#1a2233}
+  :root[data-theme="dark"] .quick button:hover,:root[data-theme="dark"] .recent-item:hover{background:#202839}
+  :root[data-theme="dark"] .updated-badge{background:#14301f;border-color:#1f4a31}
+  :root[data-theme="dark"] .quiz .opt.correct{background:#12301f;border-color:#1f5c3a}
+  :root[data-theme="dark"] .quiz .opt.wrong{background:#351818;border-color:#5c2b28}
+  :root[data-theme="dark"] .quiz .feedback.ok{background:#12301f;color:#7fd4a8}
+  :root[data-theme="dark"] .quiz .feedback.no{background:#351818;color:#e08a86}
+  :root[data-theme="dark"] .tech-tag.script{color:#e8b45a;background:#2a2112;border-color:#4a3a1a}
+  :root[data-theme="dark"] .seg button[aria-checked="true"]{background:var(--surface);color:var(--brand-ink)}
+  :root[data-theme="dark"] .msg.me .bubble{color:var(--ink)}
+  /* 画像「已更新」高亮块：浅绿底 + 浅色文字会看不清，暗色下换深绿底 */
+  :root[data-theme="dark"] .ppart.changed>.body{background:#12301f;border-color:#1f5c3a}
+  /* 错误条 / 重试按钮暗色 */
+  :root[data-theme="dark"] .errbar{background:#351818;border-color:#5c2b28;color:#f0b9b6}
+  :root[data-theme="dark"] .errbar .icon{color:#e08a86}
+  :root[data-theme="dark"] .err-retry{background:#2a1d1d;color:#f0b9b6;border-color:#5c2b28}
+  :root[data-theme="dark"] .err-retry:hover{background:#3a2220}
+  /* 预设案例琥珀徽章暗色 */
+  :root[data-theme="dark"] .case-btn b{color:#e8b45a;background:#2a2112;border-color:#4a3a1a}
+  /* 缩放 125%/150% 不破坏：用 min-height/相对尺寸，已避免硬编码大宽度 */
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+  }
+</style>
+</head>
+<body>
+<noscript><div style="padding:24px;font-family:system-ui,sans-serif;text-align:center">知教需要启用 JavaScript 才能运行，请在浏览器设置中开启后刷新页面。</div></noscript>
+<a class="skip-link" href="#chatBody">跳到主要内容</a>
+
+<!-- SVG 图标精灵（symbol+viewBox：use 引用时按 24 坐标缩放，不裁切、居中） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h14"/></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-1 5 3 3 0 0 0 2 4 2.5 2.5 0 0 0 5 .5V5a2 2 0 0 0-3-1z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 1 5 3 3 0 0 1-2 4 2.5 2.5 0 0 1-5 .5"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><path d="M9 9v2a3 3 0 0 0 4.5 2.6"/><path d="M15 11V6a3 3 0 0 0-5.6-1.5"/><path d="M5 11a7 7 0 0 0 10.5 6"/><path d="M19 11a7 7 0 0 1-.6 2.8"/><path d="M12 18v3"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L19 6h0a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12l14-7-5 14-3-6z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-1.5 5"/><path d="M20 5v6h-6"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-step" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 5l3 3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5L5 21"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="15" cy="8" r="3.5"/><path d="M12.8 10.2L5 18M8 15l2 2M6.5 18.5l1 1"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 13.5A8 8 0 0 1 10.5 4a8 8 0 1 0 9.5 9.5z"/></symbol>
+  <symbol id="i-theme-auto" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h12l2 2v16H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></symbol>
+</svg>
+
+<!-- 顶栏 -->
+<header class="topbar">
+  <button class="icon-btn left-trigger" id="leftTrigger" aria-label="打开学习设置">
+    <svg class="icon"><use href="#i-menu"/></svg>
+  </button>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">知</div>
+    <div class="brand-txt">
+      <h1>知教</h1>
+      <span>追问定位卡点 → 引导自主验证 → 证据式更新画像</span>
+    </div>
+  </div>
+  <span class="tech-tag" id="modeTag">正在检测模型状态…</span>
+  <span class="ctx-pill" id="ctxPill">当前：<b id="ctxText">初二 · 数学</b></span>
+  <div class="spacer"></div>
+  <div class="top-act">
+    <button class="icon-btn" id="themeBtn" aria-label="切换主题" title="切换主题">
+      <svg class="icon"><use href="#i-moon"/></svg>
+    </button>
+    <button class="icon-btn" id="newChatBtn" aria-label="新建对话" title="新建对话">
+      <svg class="icon"><use href="#i-reset"/></svg>
+    </button>
+    <button class="icon-btn" id="leftToggle" aria-label="折叠/展开学习设置" aria-pressed="false" title="折叠设置栏">
+      <svg class="icon"><use href="#i-menu"/></svg>
+    </button>
+    <button class="icon-btn right-trigger" id="rightTrigger" aria-label="打开学习画像">
+      <svg class="icon"><use href="#i-brain"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="layout" id="layout">
+  <!-- 左栏：学习设置 -->
+  <aside class="col left" aria-label="学习设置">
+    <div class="col-head"><svg class="icon"><use href="#i-book"/></svg>学习设置</div>
+    <div class="col-body">
+      <div class="field">
+        <label id="gradeLab">学段 / 年级</label>
+        <div class="seg" role="radiogroup" aria-labelledby="gradeLab" id="gradeSeg"></div>
+      </div>
+      <div class="field">
+        <label id="subjLab">当前学科</label>
+        <div class="subj-list" role="radiogroup" aria-labelledby="subjLab" id="subjList"></div>
+      </div>
+      <div class="field">
+        <div class="switch-row">
+          <span class="lab">跨学科联合提问<small>真实模型：动态联合提问；剧本模式：预设跨学科提示</small></span>
+          <label class="switch"><input type="checkbox" id="crossMode"/><span class="track"></span><span class="knob"></span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>最近学习记录</label>
+        <input type="search" id="recentFilter" placeholder="过滤学习记录…" aria-label="过滤最近学习记录"
+          style="width:100%;margin-bottom:8px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px;outline:none" />
+        <div class="recent" id="recentTopic"><span class="none">尚未开始学习</span></div>
+        <div style="font-size:11px;color:var(--faint);margin-top:6px;line-height:1.5">同一学科的多条记录属于同一段连续对话，点击记录可切换到该学科的学习会话。</div>
+      </div>
+      <button class="btn ghost" id="newChatBtn2" style="width:100%">
+        <svg class="icon"><use href="#i-reset"/></svg>新建对话
+      </button>
+      <button class="btn ghost" id="keyBtn" style="width:100%;margin-top:8px">
+        <svg class="icon"><use href="#i-key"/></svg>配置模型
+      </button>
+      <button class="btn ghost" id="saveBtn" style="width:100%;margin-top:8px">
+        <svg class="icon"><use href="#i-save"/></svg>保存当前学习进展
+      </button>
+    </div>
+  </aside>
+
+  <!-- 中栏：学习对话 -->
+  <main class="col chat" aria-label="学习对话">
+    <div class="chat-body" id="chatBody">
+      <!-- 欢迎 + 快速开始（初始首屏） -->
+      <section class="welcome" id="welcome">
+        <h2 id="welcomeTitle">嗨，我是知教 👋</h2>
+        <p id="welcomeSub">一条完整闭环：我先弄懂你卡在哪，陪你一步步验证，最后用证据更新你的学习画像。</p>
+        <div class="quick" id="quick"></div>
+      </section>
+      <!-- 消息流 -->
+      <div id="stream" role="log" aria-live="polite" aria-label="对话消息流"></div>
+    </div>
+
+    <!-- 错误条 -->
+    <div class="errbar" id="errbar" role="alert">
+      <svg class="icon"><use href="#i-warn"/></svg>
+      <span id="errText"></span>
+      <button class="err-retry" id="errRetry" type="button" hidden>重试</button>
+    </div>
+
+    <!-- 输入区：吸附底部 -->
+    <div class="composer">
+      <div class="chips-row" id="chipsRow"></div>
+      <div class="attach">
+        <div class="add-menu">
+          <button class="attach-btn" id="addBtn" aria-haspopup="true" aria-expanded="false">
+            <svg class="icon" style="width:16px;height:16px"><use href="#i-plus"/></svg>添加
+          </button>
+          <div class="add-pop" id="addPop">
+            <button data-act="image"><svg class="icon"><use href="#i-image"/></svg>上传题目图片</button>
+          </div>
+        </div>
+        <button class="attach-btn" id="micBtn">
+          <svg class="icon" style="width:16px;height:16px"><use href="#i-mic"/></svg>语音提问
+        </button>
+        <!-- 设备状态：从顶栏移入输入区（次级位置），避免窄屏顶栏拥挤/竖排 -->
+        <div class="dev off" id="devStatus" role="status" aria-live="polite" style="margin-left:auto">
+          <span class="led"></span><span id="devText">未检测到麦克风</span>
+        </div>
+        <button class="icon-btn" id="devRetry" aria-label="重新检测设备" title="重新检测设备" style="width:34px;height:34px">
+          <svg class="icon" style="width:16px;height:16px"><use href="#i-refresh"/></svg>
+        </button>
+      </div>
+      <div class="input-line">
+        <textarea id="input" rows="1" maxlength="3000" placeholder="输入学习问题……（Enter 发送，Shift+Enter 换行）" aria-label="学习问题输入框"></textarea>
+        <button class="stop-btn" id="stopBtn"><svg class="icon" style="width:16px;height:16px"><use href="#i-stop"/></svg>停止生成</button>
+        <button class="send-btn" id="sendBtn" disabled aria-label="发送">
+          <svg class="icon"><use href="#i-send"/></svg>
+        </button>
+      </div>
+      <div class="hint">支持题目照片与语音提问 · AI 生成内容请仔细核对</div>
+      <input type="file" id="fileInput" accept="image/*" hidden />
+    </div>
+  </main>
+
+  <!-- 右栏：学习画像 -->
+  <aside class="col right" aria-label="学习画像">
+    <div class="col-head"><svg class="icon"><use href="#i-brain"/></svg>学习画像</div>
+    <div class="col-body">
+      <div class="updated-badge" id="updatedBadge"><svg class="icon"><use href="#i-check"/></svg>学习画像已更新</div>
+      <div id="profileBox"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- 页脚：版权 / 关于 / 反馈 -->
+<footer class="app-foot">
+  <span>© 2026 知教团队 · MIT 开源 · GOAI 参赛作品</span>
+  <span class="spacer"></span>
+  <span class="foot-hide-sm">零依赖单文件 · 真实模型 / 剧本演示双模式</span>
+  <button class="foot-link" id="aboutBtn" type="button">关于本项目</button>
+  <a href="开源协议与边界说明.md" target="_blank" rel="noopener">开源协议</a>
+</footer>
+
+<!-- 抽屉：左（移动/平板） -->
+<div class="scrim" id="scrim"></div>
+<div class="drawer" id="leftDrawer" aria-label="学习设置抽屉">
+  <div class="dhead"><b>学习设置</b><button class="icon-btn" data-close-drawer aria-label="关闭学习设置抽屉"><svg class="icon"><use href="#i-x"/></svg></button></div>
+  <div class="dbody" id="leftDrawerBody"></div>
+</div>
+<div class="drawer right" id="rightDrawer" aria-label="学习画像抽屉">
+  <div class="dhead"><b>学习画像</b><button class="icon-btn" data-close-drawer aria-label="关闭学习画像抽屉"><svg class="icon"><use href="#i-x"/></svg></button></div>
+  <div class="dbody" id="rightDrawerBody"></div>
+</div>
+
+<!-- 新建对话确认弹窗 -->
+<div class="modal" id="newChatModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="ncTitle">
+    <h3 id="ncTitle">新建对话</h3>
+    <p>将结束所有学科的会话并清空对话与画像，开始全新学习。可补充一句学习背景（可选）。</p>
+    <textarea id="ncProfile" placeholder="例如：最近在学一次函数，对斜率概念容易混淆"></textarea>
+    <div class="modal-act">
+      <button class="btn ghost" id="ncCancel">取消</button>
+      <button class="btn" id="ncConfirm">开始新对话</button>
+    </div>
+  </div>
+</div>
+
+<!-- 关于本项目 -->
+<div class="modal" id="aboutModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="abTitle">
+    <h3 id="abTitle">关于知教</h3>
+    <p style="margin:0 0 8px">知教是 GOAI 世界人工智能开源大赛「无界应用」赛道 AI＋教育方向参赛作品：面向初中生，把一次求助做成「追问卡点 → 引导思考 → 自主验证 → 证据式更新画像」的学习闭环。</p>
+    <p style="margin:0 0 12px;color:var(--sub);font-size:13px">版本 1.0（汇总版存档）· 零依赖单文件 · MIT 开源 · 真实模型 / 剧本演示双模式</p>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:14px">
+      <a href="README.md" target="_blank" rel="noopener">项目说明（README）</a>
+      <a href="部署说明.md" target="_blank" rel="noopener">部署说明</a>
+      <a href="开源协议与边界说明.md" target="_blank" rel="noopener">开源协议与合规边界</a>
+    </div>
+    <div class="modal-act"><button class="btn ghost" id="aboutClose" type="button">关闭</button></div>
+  </div>
+</div>
+
+<!-- 配置模型 Key（页面内填写，无需编辑 .env） -->
+<div class="modal" id="keyModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="keyTitle">
+    <h3 id="keyTitle">配置 DeepSeek API Key</h3>
+    <p style="margin:0 0 10px;color:var(--sub);font-size:13px">填入后自动切换到「真实模型模式」。Key 仅保存在本机服务内存中，不写入 .env、不随代码提交；服务重启后需重新填入。也可编辑项目根目录的 .env 后重启服务。</p>
+    <input type="password" id="keyInput" placeholder="粘贴 DeepSeek API Key（sk-…）" autocomplete="off"
+      style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font-size:13px;outline:none" />
+    <p id="keyHint" role="status" aria-live="polite" style="font-size:12px;color:var(--faint);margin:6px 0 0;min-height:16px"></p>
+    <div class="modal-act">
+      <button class="btn ghost" id="keyClear" type="button">清除已配置</button>
+      <button class="btn ghost" id="keyCancel" type="button">取消</button>
+      <button class="btn" id="keySave" type="button">保存并启用</button>
+    </div>
+  </div>
+</div>
+
+<!-- 配置模型：提供方管理（预设/自定义；OpenAI 兼容 / Anthropic 兼容） -->
+<div class="modal" id="providerModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="pmTitle" style="width:min(600px,94vw)">
+    <h3 id="pmTitle" style="margin-bottom:4px">配置模型</h3>
+    <p style="font-size:12px;color:var(--sub);margin:0 0 10px">选择当前使用的模型提供方，或添加自定义提供方。Key 仅保存在本机 providers.json，不随代码提交；切换后顶栏徽章会更新。</p>
+    <div id="pvList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+    <details style="border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;margin-bottom:8px;background:var(--surface-2)">
+      <summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--ink)">＋ 添加提供方（预设，只提供 API Key）</summary>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+        <select id="pvPreset" aria-label="选择预设提供方" style="padding:7px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px"></select>
+        <input type="password" id="pvPresetKey" aria-label="预设提供方 API Key" placeholder="粘贴 API Key（仅字母/数字/-/_）" autocomplete="off"
+          style="padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px;outline:none"/>
+        <button class="btn" id="pvAddPreset" type="button" style="height:34px">添加并使用</button>
+      </div>
+    </details>
+    <details style="border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;margin-bottom:10px;background:var(--surface-2)">
+      <summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--ink)">＋ 添加自定义提供方</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px" class="pv-grid">
+        <input id="pvId" aria-label="Provider ID" placeholder="Provider ID（如 myapi）"
+          style="padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px;outline:none"/>
+        <input id="pvName" aria-label="显示名称" placeholder="显示名称（如 我的API）"
+          style="padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px;outline:none"/>
+        <input id="pvBase" aria-label="API 地址" placeholder="API 地址（https://…/v1）" style="grid-column:1/-1;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px;outline:none"/>
+        <select id="pvProto" aria-label="API 协议" style="padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px">
+          <option value="openai">OpenAI 兼容</option>
+          <option value="anthropic">Anthropic 兼容</option>
+        </select>
+        <input id="pvModel" aria-label="模型名" placeholder="模型名（如 deepseek-v4-flash）"
+          style="padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px;outline:none"/>
+        <input id="pvKey" type="password" aria-label="API 密钥" placeholder="API 密钥（可留空）" autocomplete="off" style="grid-column:1/-1;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:13px;outline:none"/>
+        <label style="grid-column:1/-1;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);cursor:pointer">
+          <input type="checkbox" id="pvVision" style="width:14px;height:14px;accent-color:var(--brand)"/>支持图片输入（多模态，需该 API 支持视觉）
+        </label>
+        <button class="btn" id="pvAddCustom" type="button" style="grid-column:1/-1;height:34px">添加并使用</button>
+      </div>
+    </details>
+    <p id="pvHint" role="status" aria-live="polite" style="font-size:12px;color:var(--faint);margin:0 0 10px;min-height:16px"></p>
+    <div class="modal-act"><button class="btn ghost" id="pvClose" type="button">关闭</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============ 状态 ============ */
+const GRADES = ["小学","初一","初二","初三","高一","高二","高三"];
+const SUBJECTS = ["数学","物理","语文","英语","化学","生物"];
+const state = {
+  grade:"初二", subject:"数学", cross:false,
+  profile:"", busy:false, recording:false, stopped:false,
+  topic:null, hasStarted:false
+};
+let pendingFiles = [];   // {file, url}
+let micAvailable = false, micGranted = false;
+
+/* ============ 工具 ============ */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+function escapeHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function svg(use){return `<svg class="icon"><use href="#${use}"/></svg>`;}
+/* 带超时的 fetch：合并外部信号（如用户停止）+ 超时自动中止；超时按失败处理 */
+function fetchT(url, opts, ms){
+  const c=new AbortController();
+  const t=setTimeout(()=>c.abort(), ms||15000);
+  const s=opts&&opts.signal;
+  let onS=null;
+  if(s){ if(s.aborted){ c.abort(); } else { onS=()=>c.abort(); s.addEventListener("abort", onS); } }
+  return fetch(url, Object.assign({}, opts, {signal:c.signal})).finally(()=>{ clearTimeout(t); if(s&&onS) s.removeEventListener("abort", onS); });
+}
+let _toastT=0;
+function toast(msg, kind){const t=$("#toast");clearTimeout(_toastT);t.textContent=msg;t.className="toast show"+(kind?(" "+kind):"");_toastT=setTimeout(()=>t.className="toast",2600);}
+let _errRetry=null;
+function showErr(msg, onRetry){
+  const e=$("#errbar"); $("#errText").textContent=msg;
+  const rb=$("#errRetry");
+  if(rb){ rb.hidden=!onRetry; _errRetry=onRetry||null; }
+  e.classList.add("show");
+}
+function hideErr(){
+  $("#errbar").classList.remove("show");
+  _errRetry=null;
+  const rb=$("#errRetry"); if(rb) rb.hidden=true;
+}
+if($("#errRetry")) $("#errRetry").onclick=()=>{ if(_errRetry){ const fn=_errRetry; hideErr(); fn(); } };
+
+/* ============ 左侧：学习设置渲染 ============ */
+/* radiogroup 方向键导航：←/→/↑/↓ 切换，Home/End 跳首尾；点击触发的重渲染后焦点回到选中项 */
+function wireRadiogroup(container){
+  if(!container) return;
+  container.addEventListener("keydown",e=>{
+    const keys=["ArrowRight","ArrowLeft","ArrowDown","ArrowUp","Home","End"];
+    if(keys.indexOf(e.key)<0) return;
+    const items=[...container.querySelectorAll('[role="radio"]')];
+    if(!items.length) return;
+    const idx=items.indexOf(document.activeElement);
+    if(idx<0 && e.key!=="Home" && e.key!=="End") return;
+    let next=-1;
+    if(e.key==="ArrowRight"||e.key==="ArrowDown") next=(idx+1)%items.length;
+    else if(e.key==="ArrowLeft"||e.key==="ArrowUp") next=(idx-1+items.length)%items.length;
+    else if(e.key==="Home") next=0;
+    else if(e.key==="End") next=items.length-1;
+    if(next<0) return;
+    e.preventDefault();
+    items[next].click();
+    const cid=container.id;
+    requestAnimationFrame(()=>{
+      const fresh=cid?document.getElementById(cid):container;
+      if(!fresh) return;
+      const sel=[...fresh.querySelectorAll('[role="radio"]')].find(b=>b.getAttribute("aria-checked")==="true");
+      if(sel&&sel.focus) sel.focus();
+    });
+  });
+}
+function renderGrade(){
+  const seg=$("#gradeSeg"); seg.innerHTML="";
+  GRADES.forEach(g=>{
+    const b=document.createElement("button");
+    b.textContent=g; b.setAttribute("role","radio");
+    b.setAttribute("aria-checked", String(g===state.grade));
+    b.onclick=()=>setGrade(g);
+    seg.appendChild(b);
+  });
+  wireRadiogroup(seg);
+}
+function renderSubj(){
+  const box=$("#subjList"); box.innerHTML="";
+  SUBJECTS.forEach(s=>{
+    const b=document.createElement("button");
+    b.className="chip"; b.textContent=s; b.setAttribute("role","radio");
+    b.setAttribute("aria-checked", String(s===state.subject));
+    b.onclick=()=>setSubject(s);
+    box.appendChild(b);
+  });
+  wireRadiogroup(box);
+}
+function setGrade(g){
+  if(g===state.grade) return;
+  state.grade=g; renderGrade(); syncCtx(); syncWelcome();
+  toast(`已切换到 ${g} · ${state.subject}`);
+}
+function setSubject(s){
+  if(s===state.subject) return;
+  if(state.busy){ toast("请等当前回复完成后再切换学科"); return; }
+  saveSession();
+  state.subject=s; renderSubj(); syncCtx(); syncWelcome(); loadSession();
+  toast(`当前学科：${s}${state.cross?"（跨学科模式）":""}`);
+}
+
+/* ============ 学科独立学习空间：各学科保留自己的对话与画像 ============ */
+const subjectSessions={};
+/* 显式阶段机（按学科）：idle/teaching/quiz/migration/completed——随会话持久化，绝不用搜文案推断 */
+const stageMap={};
+const caseScript={}; // 按学科记录当前生效的案例剧本（演示案例可能与当前学科不同）
+function getStage(){ return stageMap[state.subject]||"idle"; }
+function setStage(s){ stageMap[state.subject]=s; }
+const STORE_KEY="zhijiao_sessions_v3"; // v3：话题级会话（每学科可有多条会话存档，按 学科::主题 标识）
+function loadStore(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)||"{}"); }catch(e){ return {}; } }
+function saveStore(s){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(s)); return true; }catch(e){ return false; } }
+/* 服务端会话存档同步：跨浏览器/机器恢复（仅本地无数据时从服务端取回） */
+let _storeSyncT=0;
+function syncStoreToServer(){
+  if(backendOK!==true) return;
+  clearTimeout(_storeSyncT);
+  _storeSyncT=setTimeout(async ()=>{
+    const b=await apiBase(); if(b===null) return;
+    try{ await fetchT(b+"/api/sessions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:loadStore()})},8000); }catch(e){}
+  },1500);
+}
+async function restoreStoreFromServer(){
+  if(backendOK!==true) return false;
+  const b=await apiBase(); if(b===null) return false;
+  try{
+    const r=await fetchT(b+"/api/sessions",{method:"GET"},8000);
+    const j=await r.json();
+    if(j && j.ok && j.data){
+      const local=loadStore();
+      const hasLocal=Object.keys(local).some(k=>k!=="__meta" && local[k] && local[k].started);
+      const hasServer=Object.keys(j.data).some(k=>k!=="__meta" && j.data[k] && j.data[k].started);
+      if(!hasLocal && hasServer){ saveStore(j.data); return true; }
+    }
+  }catch(e){}
+  return false;
+}
+function sidOf(subj, topic){ return subj + "::" + (topic||""); }
+function currentSid(){ return sidOf(state.subject, state.topic); }
+function activeSid(subj){ const m=loadStore().__meta; return (m && m.active && m.active[subj]) || null; }
+function setActiveSid(store, subj, sid){ if(!store.__meta) store.__meta={active:{}}; store.__meta.active[subj]=sid; }
+function fmtTs(){ const n=new Date(); return `${n.getMonth()+1}/${n.getDate()} ${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`; }
+/* v2 → v3 迁移：旧版“每学科一段”转为 学科::主题 会话存档并标记 active，保留既有学习数据 */
+function migrateStore(){
+  try{
+    const v2=JSON.parse(localStorage.getItem("zhijiao_sessions_v2")||"{}");
+    const keys=Object.keys(v2).filter(k=>v2[k]&&typeof v2[k]==="object"&&Array.isArray(v2[k].msgs));
+    if(!keys.length) return;
+    const s=loadStore();
+    if(s.__meta) return; // 已迁移过
+    const meta={active:{}};
+    keys.forEach(subj=>{
+      const d=v2[subj];
+      const topic=(d.topic||"学习会话");
+      const sid=sidOf(subj, topic);
+      if(!s[sid]) s[sid]={subject:subj, topic:topic, ts:fmtTs(), msgs:d.msgs||[], profile:d.profile||null, started:!!d.started, stage:d.stage||"idle"};
+      meta.active[subj]=sid;
+    });
+    s.__meta=meta;
+    saveStore(s);
+    try{ localStorage.removeItem("zhijiao_sessions_v2"); }catch(e){}
+  }catch(e){}
+}
+/* 持久化当前话题会话（消息快照+画像）：刷新不丢对话；主题切换即“存档点” */
+function persistSession(){
+  if(!stream.childElementCount) return; // 空流不落盘：避免用空快照覆盖已有会话（“记录在但会话空”的丢失场景）
+  const store=loadStore();
+  const msgs=[...stream.children].slice(-60).map(el=>{
+    const c=el.cloneNode(true);
+    // blob 缩略图刷新后必然失效，落盘时换成文字占位，避免恢复出破图
+    c.querySelectorAll("img[src^='blob:']").forEach(im=>{
+      const em=document.createElement("em"); em.textContent="[图片："+(im.alt||"题目缩略图")+"]"; im.replaceWith(em);
+    });
+    return c.outerHTML;
+  });
+  const sid=currentSid();
+  store[sid]={subject:state.subject, topic:state.topic||"学习会话", ts:fmtTs(), msgs, profile:profileData, started:state.hasStarted, stage:getStage()};
+  setActiveSid(store, state.subject, sid);
+  const _ok = saveStore(store);
+  syncStoreToServer(); // 同步到服务端存档（跨浏览器/机器恢复）
+  return _ok;
+}
+/* 主题切换：先归档旧主题会话快照，再切到新主题（记录=话题级会话，旧主题成为可进入的历史存档） */
+function applyTopic(topic){
+  if(!topic) return;
+  if(topic===state.topic){ renderRecent(); return; }
+  // 仅当存在“旧主题”时才归档（首次从无主题建立主题时不产生空档存档）
+  if(state.topic && state.hasStarted && stream.childElementCount) persistSession();
+  state.topic=topic;
+  renderRecent();
+}
+function pushHistory(topic){ applyTopic(topic); } // 兼容旧调用点
+function hasSession(subj){
+  const m=subjectSessions[subj]; if(m && m.started) return true;
+  const sid=activeSid(subj)||sidOf(subj,"");
+  const s=loadStore()[sid]; return !!(s && s.started);
+}
+function saveSession(){
+  persistSession(); // 先把当前现场落盘，再把 DOM 移入内存槽
+  const ses=subjectSessions[state.subject]||(subjectSessions[state.subject]={wrap:document.createElement("div"),profile:null,topic:null,started:false,stage:"idle"});
+  while(stream.firstChild) ses.wrap.appendChild(stream.firstChild);
+  ses.profile=profileData; ses.topic=state.topic; ses.started=state.hasStarted; ses.stage=getStage();
+}
+function loadSession(optSid){
+  let ses=null;
+  const restoreFrom=(saved)=>{
+    if(!saved || !saved.started) return null;
+    const s={wrap:document.createElement("div"),profile:saved.profile||null,topic:saved.topic||null,started:true,stage:saved.stage||"idle"};
+    (saved.msgs||[]).forEach(h=>{ const t=document.createElement("template"); t.innerHTML=h; s.wrap.appendChild(t.content); });
+    return s;
+  };
+  if(optSid){
+    ses=restoreFrom(loadStore()[optSid]);
+    if(ses) subjectSessions[state.subject]=ses;
+  }else{
+    ses=subjectSessions[state.subject];
+    if(!ses){
+      const sid=activeSid(state.subject)||currentSid();
+      ses=restoreFrom(loadStore()[sid]);
+      if(ses) subjectSessions[state.subject]=ses;
+    }
+  }
+  stream.innerHTML="";
+  if(ses){
+    while(ses.wrap.firstChild) stream.appendChild(ses.wrap.firstChild);
+    profileData=ses.profile; state.topic=ses.topic; state.hasStarted=ses.started;
+    stageMap[state.subject]=ses.stage||"idle"; // 阶段随会话恢复：完成后刷新仍保持完成
+  } else {
+    profileData=null; state.topic=null; state.hasStarted=false;
+    stageMap[state.subject]="idle";
+  }
+  // 恢复的练习卡：已作答的保持历史状态，未作答的重新点亮可继续作答
+  hydrateQuizzes();
+  $("#welcome").style.display = (state.hasStarted && stream.childElementCount) ? "none" : ""; // started 但空流也显示欢迎页，避免空白聊天区
+  if(profileData) renderProfile(profileData); else renderProfileEmpty();
+  renderRecent();
+  scrollDown();
+}
+
+/* 同步顶栏上下文与欢迎语 */
+function syncCtx(){
+  if(state.cross) $("#ctxText").textContent=`${state.grade} · 跨学科`;
+  else $("#ctxText").textContent=`${state.grade} · ${state.subject}`;
+}
+/* 各学科欢迎引导：副标题 + 快速入口文案 + 剧本 starter */
+const SUBJECT_GUIDE = {
+  "数学":{sub:"一条完整闭环：我先弄懂你卡在哪，陪你一步步验证，最后用证据更新你的学习画像。",
+    learn:{t:"我知道公式，但不会联系图像",d:"从公式到图像的完整闭环引导"},
+    starter:"我知道斜率公式，但不会把它和图像方向联系起来。"},
+  "物理":{sub:"一条完整闭环：我先弄懂你卡在哪，把抽象概念接上生活，再用证据更新画像。",
+    learn:{t:"我知道公式，但不会联系生活现象",d:"把公式接上生活实例的闭环引导"},
+    starter:"我知道浮力公式，但解释不了为什么钢铁轮船能浮在水面上。"},
+  "语文":{sub:"一条完整闭环：我们一起读、一起品，把感觉变成说得出的表达，并更新画像。",
+    learn:{t:"我读得懂课文，但说不出妙在哪里",d:"从感觉到表达的闭环引导"},
+    starter:"我觉得『春风又绿江南岸』写得好，但说不出好在哪里。"},
+  "英语":{sub:"一条完整闭环：听说读写都能陪你练，先定位卡点再验证，并更新画像。",
+    learn:{t:"我背了单词，但不会造句",d:"从单词到句型的闭环引导"},
+    starter:"我背了很多单词，但一造句就是中文语序。"},
+  "化学":{sub:"一条完整闭环：从现象到原理一步步搞明白，先定位卡点再验证，并更新画像。",
+    learn:{t:"我背了方程式，但不会解释现象",d:"从符号到现象的闭环引导"},
+    starter:"我背得出化学方程式，但描述不了实验里到底发生了什么。"},
+  "生物":{sub:"一条完整闭环：从结构到功能理解生命现象，先定位卡点再验证，并更新画像。",
+    learn:{t:"我背了结构，但不会联系功能",d:"从结构到功能的闭环引导"},
+    starter:"我背得出小肠绒毛这些结构，但说不清它们为什么长这样。"}
+};
+function renderQuick(){
+  const g=SUBJECT_GUIDE[state.subject]||SUBJECT_GUIDE["数学"];
+  $("#welcomeSub").textContent=g.sub;
+  $("#welcomeTitle").textContent=`嗨，我是知教 👋（${state.grade}·${state.subject}）`;
+  // 首屏唯一主入口：90 秒完整演示；其余为次级入口，均标注预设案例
+  $("#quick").innerHTML=`
+    <button data-q="demo" class="demo-card"><span class="qt">${svg("i-spark")}▶ 开始 90 秒完整演示</span><span class="qd">预设演示案例 · 数学（一次函数斜率）｜滑块画图 + 选择题 + 迁移验证 + 画像更新</span></button>
+    <button data-q="learn"><span class="qt">${svg("i-chart")}${escapeHtml(g.learn.t)}</span><span class="qd">预设演示案例 · ${state.subject}｜${escapeHtml(g.learn.d)}</span></button>
+    <button data-q="continue"><span class="qt">${svg("i-refresh")}继续上次的学习任务</span><span class="qd">基于学习记录回到上次练习</span></button>`;
+}
+function syncWelcome(){ renderQuick(); }
+
+/* ============ 设备 / 麦克风检测 ============ */
+async function detectMic(){
+  const d=$("#devStatus"); d.className="dev load"; $("#devText").textContent="检测设备中…";
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices){ throw new Error("noapi"); }
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    const audioInputs=devices.filter(x=>x.kind==="audioinput");
+    if(audioInputs.length===0){ throw new Error("nodevice"); }
+    // 不在这里请求权限；仅判断设备存在且是否已有授权
+    const allowed=audioInputs.some(x=>x.label && x.label!=="");
+    micAvailable=true;
+    d.className="dev on"; $("#devText").textContent=allowed?"麦克风已连接":"麦克风可用（点击授权）";
+    $("#micBtn").disabled=false;
+    $("#micBtn").title=allowed?"语音提问":"点击后将请求麦克风权限";
+  }catch(e){
+    micAvailable=false;
+    d.className="dev off";
+    $("#devText").textContent = (e && e.message==="nodevice") ? "未检测到麦克风" : "麦克风未授权";
+    $("#micBtn").disabled=true;
+    $("#micBtn").title="设备未连接：无法语音提问";
+  }
+}
+$("#devRetry").onclick=detectMic;
+
+async function ensureMicAccess(){
+  if(micGranted) return true;
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({audio:true});
+    s.getTracks().forEach(t=>t.stop());
+    micGranted=true; micAvailable=true;
+    $("#devStatus").className="dev on"; $("#devText").textContent="麦克风已连接";
+    $("#micBtn").disabled=false; $("#micBtn").title="语音提问";
+    return true;
+  }catch(e){
+    micGranted=false;
+    $("#devStatus").className="dev off"; $("#devText").textContent="麦克风未授权";
+    showErr("无法使用麦克风：请在浏览器地址栏允许麦克风权限后重试。");
+    return false;
+  }
+}
+
+/* ============ 消息渲染 ============ */
+const stream=$("#stream");
+function addMsg(role){
+  const w=document.createElement("div"); w.className="msg "+(role==="ai"?"ai":"me");
+  const who=document.createElement("div"); who.className="who"; who.textContent=role==="ai"?"知教":"我";
+  const b=document.createElement("div"); b.className="bubble";
+  w.appendChild(who); w.appendChild(b); stream.appendChild(w);
+  scrollDown(); return b;
+}
+function scrollDown(){const c=$("#chatBody"); c.scrollTop=c.scrollHeight;}
+function typingBubble(){
+  const b=addMsg("ai");
+  b.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';
+  return b;
+}
+function md(s){return escapeHtml(s).replace(/\n/g,"<br>");}
+/* 结构化 AI 块（写入指定气泡，避免重复创建）
+   observe：纯对话段落（无标题）；step：不独立成块，降级灰色附注；fig：内联 SVG 示意图；note：灰色小字提示行 */
+function fillBlock(bubbleEl, parts){
+  bubbleEl.innerHTML="";
+  const wrap=document.createElement("div"); wrap.className="ai-block";
+  const steps=parts.filter(p=>p[0]==="step").map(p=>p[1]);
+  let visible=parts.filter(p=>p[0]!=="step");
+  if(!visible.length && steps.length){ visible=[["observe",steps.join("\n")]]; steps.length=0; }
+  // 附注挂载位置：优先「试一试」前的最后一个 observe 块（引导先于任务），否则取 try 前一块或最后一块
+  const tryIdx=visible.findIndex(p=>p[0]==="try");
+  let noteIdx=-1;
+  for(let i=0;i<visible.length;i++){ if(visible[i][0]==="try") break; if(visible[i][0]==="observe") noteIdx=i; }
+  if(noteIdx<0) noteIdx=tryIdx>0?tryIdx-1:visible.length-1;
+  visible.forEach((p,idx)=>{
+    const [k,val]=p;
+    const blk=document.createElement("div"); blk.className="blk";
+    if(k==="try"){
+      blk.classList.add("try");
+      blk.innerHTML=`<div class="h">${svg("i-pen")}试一试</div><div class="c">${md(val)}</div>`;
+    }else if(k==="fig"){
+      blk.classList.add("fig"); blk.innerHTML=val; // 内联 SVG，内部可信内容
+    }else if(k==="note"){
+      blk.innerHTML=`<div class="note" style="margin-top:0;padding-top:0;border-top:none">${md(val)}</div>`;
+    }else{
+      // observe 等：去标题的对话段落，直接用对话口吻呈现
+      blk.innerHTML=`<div class="c">${md(val)}</div>`;
+    }
+    if(idx===noteIdx && steps.length){
+      const note=document.createElement("div"); note.className="note";
+      note.innerHTML=steps.map(s=>md(s)).join("<br>");
+      blk.appendChild(note);
+    }
+    wrap.appendChild(blk);
+  });
+  bubbleEl.appendChild(wrap); scrollDown(); return bubbleEl;
+}
+function aiBlock(parts){ return fillBlock(addMsg("ai"), parts); }
+
+/* 「为什么这样教」结构化策略摘要：默认折叠，只展示证据/策略/下一步验证，不展示原始思维链；
+   剧本模式标注「预设策略」，真实模式为诊断摘要 */
+function renderWhyTeach(data, preset){
+  if(!data) return;
+  const w=document.createElement("div"); w.className="msg ai";
+  const who=document.createElement("div"); who.className="who";
+  who.textContent=preset?"知教 · 教学策略（预设）":"知教 · 教学策略";
+  const det=document.createElement("details"); det.className="reason"; // 默认折叠，不强制展开
+  det.innerHTML=`<summary>${svg("i-brain")}为什么这样教<span class="rsub">${preset?"预设策略":"实时诊断摘要"}</span></summary>
+    <div class="rbody">
+      <div class="ritem"><b>观察到的证据</b><span>${md(data.observe||"")}</span></div>
+      <div class="ritem"><b>当前策略</b><span>${md(data.strategy||"")}</span></div>
+      <div class="ritem"><b>下一步验证</b><span>${md(data.next||"后续追问与验证练习。")}</span></div>
+    </div>`;
+  w.appendChild(who); w.appendChild(det);
+  stream.appendChild(w); scrollDown(); return det;
+}
+
+/* ============ 学习画像 ============ */
+const PB=$("#profileBox");
+function renderProfileEmpty(){
+  PB.innerHTML=`
+    <div class="profile-empty">
+      <div><b>当前状态：</b>等待第一次学习互动</div>
+    </div>
+    <div class="ppart"><div class="h">${svg("i-eye")}待观察</div>
+      <ul class="observe">
+        <li><span class="dot"></span>概念理解是否准确</li>
+        <li><span class="dot"></span>能否将知识与图像/实例联系</li>
+        <li><span class="dot"></span>常用的表达方式与误区</li>
+      </ul>
+    </div>
+    <div class="profile-empty" style="margin-top:0">
+      完成一次问答后，我会在这里解释：<b>如何理解你、为什么调整教学方式</b>。
+    </div>
+    <button class="btn ghost editOpen" style="width:100%;margin-top:12px">补充学习背景</button>`;
+  PB.querySelector(".editOpen").onclick=e=>openProfileEdit(e.currentTarget);
+  syncRightDrawer();
+}
+let profileData=null;
+const DEFAULT_STAGES=[{t:"已互动",done:true,now:false},{t:"定位卡点",done:false,now:true},{t:"引导验证",done:false,now:false},{t:"巩固迁移",done:false,now:false}];
+function renderProfile(d, changedKeys){
+  profileData=d;
+  // 防御：真实模型返回的画像可能缺字段，兜底保证渲染不崩
+  d.diff=d.diff||"（待补充）"; d.basis=d.basis||"（待补充）";
+  d.strategy=d.strategy||"（待补充）"; d.next=d.next||"（待补充）";
+  if(!Array.isArray(d.stages) || !d.stages.length) d.stages=DEFAULT_STAGES;
+  const badge=$("#updatedBadge");
+  const ch=k=> changedKeys && changedKeys.includes(k) ? " changed":"";
+  PB.innerHTML=`
+    <div class="ppart${ch('diff')}"><div class="h">${svg("i-target")}当前学习困难</div>
+      <div class="body">${md(d.diff)}</div></div>
+    <div class="ppart${ch('basis')}"><div class="h">${svg("i-eye")}判断依据</div>
+      <div class="body">${md(d.basis)}</div></div>
+    <div class="ppart${ch('strategy')}"><div class="h">${svg("i-step")}当前教学策略</div>
+      <div class="body">${md(d.strategy)}</div></div>
+    <div class="ppart${ch('next')}"><div class="h">${svg("i-chart")}下一步任务</div>
+      <div class="body">${md(d.next)}</div></div>
+    <div class="ppart"><div class="h">${svg("i-check")}学习进展</div>
+      <div class="body"><div class="stage">${d.stages.map(s=>`<span class="s ${s.done?'done':''} ${s.now?'now':''}"><span class="d"></span>${s.t}</span>`).join("")}</div></div></div>
+    <button class="btn ghost editOpen" style="width:100%;margin-top:4px">补充学习背景</button>`;
+  PB.querySelector(".editOpen").onclick=e=>openProfileEdit(e.currentTarget);
+  if(changedKeys && changedKeys.length){
+    badge.classList.add("show");
+    clearTimeout(badge._t); badge._t=setTimeout(()=>badge.classList.remove("show"),2600);
+  }
+  // 同步到右侧抽屉
+  syncRightDrawer();
+}
+function syncRightDrawer(){
+  const rb=$("#rightDrawerBody");
+  if(rb && profileData!==undefined){ rb.innerHTML=PB.innerHTML;
+    const eo=rb.querySelector(".editOpen"); if(eo) eo.onclick=e=>openProfileEdit(e.currentTarget); }
+}
+
+/* ============ 发送（真实后端 or 前端剧本演示） ============ */
+let backendOK=null; // null=未知, true/false
+let _ocrAvailable=false; // 服务端离线 OCR 是否可用（health.ocr，用于如实提示）
+let _lastChatErr=null; // 最近一次真实模型请求的具体失败原因（供错误条显示，替代笼统提示）
+let _lastReasonSig=""; // 「为什么这样教」去重：策略/证据未变化则不重复渲染卡片
+/* file:// 直开：扫描本机常用端口找后端；全部失败返回 null（无后端），
+   绝不用空地址拼接请求，避免 file:///api/health 报错，控制台保持干净 */
+let API_BASE; // undefined=未探测; ""=http 同源相对路径; "http://…"=file 模式命中; null=无后端
+async function apiBase(){
+  if(location.protocol!=="file:") return "";
+  if(API_BASE!==undefined) return API_BASE;
+  for(const p of [8765,8000,8001,8080]){
+    try{
+      const r=await fetch("http://localhost:"+p+"/api/health",{signal:AbortSignal.timeout(2500)});
+      if(r.ok){ API_BASE="http://localhost:"+p; return API_BASE; }
+    }catch(e){}
+  }
+  API_BASE=null; // 本机无后端：直接进入剧本演示模式
+  return null;
+}
+async function checkBackend(){
+  const b=await apiBase();
+  if(b===null){ backendOK=false; setModeTag(false); return false; }
+  try{const r=await fetch(b+"/api/health");const j=await r.json();backendOK=!!j.loaded;_ocrAvailable=!!j.ocr;setModeTag(backendOK, j.provider);return backendOK;}
+  catch(e){backendOK=false;setModeTag(false);return false;}
+}
+/* 顶栏模式徽章：让评委/用户任何时刻都能看到当前是真实模型还是剧本演示 */
+function setModeTag(real, providerName){
+  const t=$("#modeTag"); if(!t) return;
+  if(real){ t.textContent="实时模型 · "+(providerName||"已配置"); t.classList.remove("script"); }
+  else{ t.textContent="剧本演示模式（未配置 Key）"; t.classList.add("script"); }
+}
+function setBusy(v){
+  state.busy=v;
+  $("#sendBtn").disabled = v ? true : !canSend();
+  $("#stopBtn").classList.toggle("show", v);
+  $("#input").disabled=v;
+}
+function canSend(){return $("#input").value.trim().length>0 || pendingFiles.length>0;}
+
+async function send(text, files){
+  if(state.busy) return;
+  hideErr();
+  state.hasStarted=true;
+  // 用户消息气泡
+  const mb=addMsg("me");
+  let html=md(text||(files.length?"[已发送图片/语音]":""));
+  mb.innerHTML=html;
+  if(files.length){
+    files.forEach(f=>{ if(f.url){const im=document.createElement("img");im.src=f.url;im.className="thumb";im.alt="你上传的题目图片";im.loading="lazy";im.decoding="async";im.onerror=()=>{const em=document.createElement("em");em.textContent="[图片加载失败]";im.replaceWith(em);};mb.appendChild(im);} });
+  }
+  $("#welcome").style.display="none";
+  // 清空输入
+  $("#input").value=""; pendingFiles=[]; renderChips(); updateSendState();
+  // 生成中
+  const aiB=typingBubble();
+  setBusy(true); state.stopped=false; state.ac=new AbortController();
+
+  if(backendOK===null){
+    // 未知：先探测后端，就绪则走真实模型，否则走前端剧本演示闭环
+    const ok=await checkBackend();
+    if(ok){ const used=await tryBackend(text,files,aiB); if(used==="partial"){ toast("网络中断：以上为已生成的部分内容，可继续向我提问"); } else if(!used) showErr(_lastChatErr||"模型服务异常，未能生成回答。", ()=>retrySend(text,files,aiB)); }
+    else { await scriptedReply(text, files, aiB); }
+  } else if(backendOK===true){
+    // 真实后端已就绪：失败必须如实暴露，绝不回退到剧本（避免评审环境出现假回答）
+    const used=await tryBackend(text,files,aiB);
+    if(used==="partial"){ toast("网络中断：以上为已生成的部分内容，可继续向我提问"); }
+    else if(!used) showErr(_lastChatErr||"模型服务暂时不可用，请检查后端日志或稍后重试。", ()=>retrySend(text,files,aiB));
+  } else {
+    // 本地无后端：前端剧本演示闭环
+    await scriptedReply(text, files, aiB);
+  }
+  persistSession(); // 本轮结束后落盘：刷新不丢对话与画像
+  setBusy(false);
+}
+
+/* 重试上一条失败的真实模型请求：复用原气泡流式重放，不新增消息 */
+async function retrySend(text, files, aiB){
+  if(state.busy) return;
+  hideErr();
+  setBusy(true); state.stopped=false; state.ac=new AbortController();
+  aiB.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';
+  const used=await tryBackend(text, files, aiB);
+  if(!used) showErr(_lastChatErr||"模型服务暂时不可用，请检查后端日志或稍后重试。", ()=>retrySend(text,files,aiB));
+  persistSession();
+  setBusy(false);
+}
+
+async function tryBackend(text, files, aiB){
+  _lastChatErr=null;
+  const fd=new FormData();
+  fd.append("text", text||"");
+  fd.append("grade", state.grade);
+  fd.append("subject", state.subject);
+  fd.append("profile", state.profile);
+  fd.append("cross", state.cross?"1":"");
+  files.forEach(f=>fd.append("files", f.file));
+  // 真实后端下的"思考/理解"态提示：图片不宣称看懂，如实表达「请口述题意」的教学行为
+  const hint = files.some(f=>f.file.type.startsWith("image/"))
+            ? (_ocrAvailable ? "已收到图片，正在离线 OCR 提取题面文字…" : "已收到图片（未检测到离线 OCR 工具），将请你口述题意…")
+            : (text && /语音|听/.test(text)) ? "知教正在听并理解你的提问…"
+            : "知教正在诊断你的理解…";
+  let gotText=false; // 声明在 try 外：catch 里需要判断是否已有部分生成内容
+  let timedout=false; // 声明在 try 外：catch 里区分「超时」与「用户停止」
+  let gotProfile=false, blockedNow=false; // 画像事件是否到达 / 是否被安全拦截
+  try{
+    const b=await apiBase();
+    if(b===null) return false; // 无后端：如实报错，不伪造回复
+    // 组合信号：用户停止 + 60s 超时（覆盖整段流式读取；超时按失败处理，错误条提供「重试」）
+    const ctrl=new AbortController();
+    const onStop=()=>ctrl.abort();
+    if(state.ac) state.ac.signal.addEventListener("abort", onStop);
+    const tmr=setTimeout(()=>{ timedout=true; ctrl.abort(); }, 60000);
+    let buf="", full="", errMsg=""; // 声明在嵌套 try 外：finally 之后仍需读取 errMsg
+    try{
+      const res=await fetch(b+"/api/chat",{method:"POST",body:fd,signal:ctrl.signal});
+      if(!res.ok) throw new Error("http "+res.status);
+      const reader=res.body.getReader(); const dec=new TextDecoder();
+      aiB.innerHTML=`<div class="typing"><i></i><i></i><i></i></div><span class="none" style="margin-left:8px">${hint}</span>`;
+      while(true){
+        const {done,value}=await reader.read(); if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const parts=buf.split("\n\n"); buf=parts.pop();
+      for(const p of parts){
+        if(p.startsWith("data: ")){const t=p.slice(6); if(t){gotText=true; full+=t.replace(/\\n/g,"\n"); aiB.innerHTML=md(full); scrollDown();}}
+        if(p.startsWith("event: done")){ /* end */ }
+        if(p.startsWith("event: error")){ const m=p.match(/^data:\s*(.+)$/m); if(m) errMsg=m[1]; }
+        if(p.startsWith("event: blocked")){
+          // 未成年人安全拦截：以安全提示替换气泡内容
+          const m=p.match(/^data:\s*(.+)$/m);
+          if(m){ blockedNow=true; gotText=true; aiB.innerHTML=md(m[1]); }
+        }
+        if(p.startsWith("event: reason")){
+          // 真实模式诊断摘要：结构化展示「为什么这样教」（默认折叠，非原始思维链）
+          const m=p.match(/^data:\s*(.+)$/m);
+          if(m){ try{ const rr=JSON.parse(m[1]);
+            const sig=(rr.observe||"")+"|"+(rr.strategy||"");
+            if(sig!==_lastReasonSig){ _lastReasonSig=sig; renderWhyTeach(rr, false); }
+          }catch(e){} }
+        }
+        if(p.startsWith("event: quiz")){
+          // 真实模式的自主验证练习卡：后端出题、前端复用 renderQuiz 渲染
+          const m=p.match(/^data:\s*(.+)$/m);
+          if(m){ try{ const qz=JSON.parse(m[1]); if(qz && qz.q && Array.isArray(qz.opts) && qz.opts.length>=2) renderBackendQuiz(qz); }catch(e){} }
+        }
+        if(p.startsWith("event: profile")){
+          const m=p.match(/^data:\s*(.+)$/m);
+          if(m){ try{ const prof=JSON.parse(m[1]); if(prof && typeof prof==="object"){
+            gotProfile=true;
+            if(prof.topic) applyTopic(prof.topic);
+            renderProfile(prof, ["diff","basis","strategy","next"]); } }
+          catch(e){} }
+        }
+      }
+        if(state.stopped) break;
+      }
+    } finally {
+      clearTimeout(tmr);
+      if(state.ac) state.ac.signal.removeEventListener("abort", onStop);
+    }
+    if(gotText && !gotProfile && !state.stopped && !blockedNow){ toast("本轮画像暂未更新（证据不足），将在后续对话中补充"); }
+    if(!gotText && !state.stopped){
+      aiB.innerHTML=md("（模型未返回内容，请重试）");
+      if(errMsg) showErr(errMsg, ()=>retrySend(text,files,aiB));
+      else showErr("模型未返回内容，请重试。", ()=>retrySend(text,files,aiB));
+    }
+    // 画像只认后端 event: profile（证据驱动）；事件缺失或被中断时保持现状，绝不前端编造依据
+    return true;
+  }catch(e){
+    if(state.stopped || (e && e.name==="AbortError")){
+      if(timedout){ _lastChatErr="模型响应超时（60 秒），请重试"; return false; } // 超时：按失败处理，错误条给出「重试」
+      // 主动停止：保留已生成的部分内容，不算失败、不弹错误
+      if(!gotText) aiB.innerHTML=md("（已停止生成）");
+      return "aborted";
+    }
+    // 单次失败不永久改写 backendOK：下一条消息继续尝试真实模型，错误如实暴露（避免网络抖动后无声降级到剧本）
+    if(gotText) return "partial"; // 已有部分内容：保留显示并提示，不再清空重来
+    _lastChatErr=(e&&e.message)?("请求失败："+e.message):"请求失败（网络或服务异常）";
+    return false;
+  }
+}
+
+/* ============ 前端剧本演示（保证无后端也能演示完整闭环） ============ */
+const SCRIPT = {
+  photo:{
+    /* 图片不进模型（后端如实要求口述题意），文案必须与真实行为一致：不宣称「看懂了图」 */
+    reason:{observe:"学生上传了题目图片但未口述题意；理解起点尚不清楚。",
+      strategy:"不代替学生读图，先请学生口述已知条件与所求。",
+      next:"等待学生口述题意与已知条件"},
+    reply:[["observe","我收到了你的题目图片。我不替你读图——先请你用自己的话，说说图里的已知条件和要求什么。"],
+      ["step","看题三步：先读已知量，再读所求，最后决定用哪个知识点或公式。"],
+      ["try","你先说说：从图上你读到了哪些已知条件？卡在哪一步？"]],
+    firstProfile:{diff:"能上传题目，但尚未口述题意与自己的思路。",
+      basis:"你上传了题目图片，尚未用文字表达题意或思路。",
+      strategy:"先请你口述题意与已知条件，再定位卡点。",
+      next:"说出图里的已知条件和你的第一想法，我帮你判断方向。",
+      stages:[{t:"已互动",done:true,now:false},{t:"理解题意",done:false,now:true},{t:"定位卡点",done:false,now:false},{t:"巩固迁移",done:false,now:false}]}
+  }
+};
+/* 「继续上次任务」入口由 runContinueCase 诚实处理，不再使用预设剧本数据 */
+/* 各学科学习剧本（无后端时的可复现演示内容） */
+const SUBJECT_SCRIPTS = {
+  "数学":{ topic:"一次函数 · 斜率与图像", level:"初二",
+    cross:{subj:"物理",text:"斜率就是『变化快慢』：路程-时间图像里，直线越陡说明速度越大。用速度的想法理解 k 很直观。"},
+    quizFig:`<svg viewBox="0 0 260 120" role="img"><line x1="16" y1="60" x2="244" y2="60" stroke="#cdd8e6"/><line x1="130" y1="8" x2="130" y2="112" stroke="#cdd8e6"/><line x1="58" y1="22" x2="206" y2="98" stroke="#2f6df0" stroke-width="2.5"/><text x="150" y="112" font-size="11" fill="#2f6df0">k&lt;0：向右下降</text></svg>`,
+    reason:{observe:"学生通过预设案例自述：『知道斜率公式，但不会联系图像方向』；暂无其他交互证据。",
+      strategy:"用爬山类比建立直觉，再用选择题验证 k 的符号与方向的对应。",
+      next:"选择题：y=-2x+3 的图像方向"},
+    reply:[
+      ["observe","你说你知道斜率公式，但不会把它和图像方向联系起来。我们先验证一下这个自述的卡点。"],
+      ["step","先不看公式：想象爬山，坡越陡斜率绝对值越大；向右上坡 k>0，向右下坡 k<0。"],
+      ["try","下面这条直线向右是上升还是下降？k 是正还是负？"]
+    ],
+    quiz:{q:"直线 y = -2x + 3 的图像大致是怎样的？", opts:[
+      {t:"向右上升，k>0",ok:false},
+      {t:"向右下降，k<0",ok:true},
+      {t:"水平直线",ok:false}
+    ], ok:"答对啦！k=-2<0，所以向右下降。你已经把『符号』和『方向』对上了。",
+       no:"再想想：k 的正负决定方向。k=-2，是负数，应该是？"},
+    wrongHint:"看 k=-2：它是负数。回忆『向右上坡 k>0，向右下坡 k<0』。",
+    wrongReveal:{observe:"两次都没选对，没关系——我们把关键一步钉死：符号定方向。",
+      step:"k=-2<0，向右走就是『下坡』，图像向右下降；|k|=2 说明坡比较陡。符号定方向，绝对值定陡缓。"},
+    wrongProfile:{diff:"k 的符号与图像方向的对应还不稳固，判断时易靠猜。",
+      basis:"在 y=-2x+3 的方向练习中，两次作答均未用 k 的符号判断方向。",
+      strategy:"回到爬山类比强化方向直觉，再出一道更简单的变式。",
+      next:"用『爬坡为正、下坡为负』再判断一条直线方向。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    firstProfile:{diff:"自述：能说出斜率公式，但不会把公式与图像倾斜程度联系起来；待验证。",
+      basis:"依据自选预设案例入口；尚无行为验证证据。",
+      strategy:"从『公式讲解』切换为『图像对比引导』。",
+      next:"完成一道图像方向练习以验证。",
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    afterProfile:{diff:"能说出公式，并初步建立 k 的符号与方向的联系。",
+      basis:"你正确回答了 k=-2 时图像向右下降。",
+      strategy:"继续用新场景做迁移验证。",
+      next:"在新场景中判断变化快慢（如气温随时间变化）。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:true,now:false},{t:"巩固迁移",done:false,now:true}]},
+    migration:{ // 真正不同的新场景做迁移验证
+      observe:"现在换个场景：不是直线，而是『变化快慢』。",
+      step:"看这张图——两条曲线都从左下到右上，哪条变得更『陡』？陡代表变化更快。",
+      try:"如果横轴是时间、纵轴是路程，较陡的曲线说明什么？",
+      close:"对——较陡的曲线变化更快：横轴是时间、纵轴是路程时，更陡的那条表示速度更大。你已经把『斜率就是变化快慢』用到了新场景。",
+      fig:`<svg viewBox="0 0 260 130" role="img"><line x1="30" y1="8" x2="30" y2="108" stroke="#8b97a8"/><line x1="30" y1="108" x2="250" y2="108" stroke="#8b97a8"/><path d="M30 108 L225 30" stroke="#2f6df0" stroke-width="2.5" fill="none"/><path d="M30 108 L225 78" stroke="#d98a1f" stroke-width="2.5" fill="none"/><text x="230" y="30" font-size="11" fill="#2f6df0">陡=快</text><text x="230" y="78" font-size="11" fill="#d98a1f">缓=慢</text><text x="6" y="14" font-size="10" fill="#8b97a8">路程</text><text x="238" y="120" font-size="10" fill="#8b97a8">时间</text></svg>`,
+      check:{correct:[["陡","快"],["陡","速度"],["较陡","变化"],["速度快"],["速度更快"],["变化快"],["变化更快"],["速度大"]],
+        wrong:[["陡","慢"],["缓","快"],["一样"]]},
+      wrongMsg:"注意——不是『更陡就是更慢』：曲线越陡，单位时间内变化越大，也就是越快。"
+    }
+  },
+  "物理":{ topic:"浮力 · 沉与浮", level:"初二",
+    cross:{subj:"数学",text:"沉浮本质是比较两个数：浮力大于重力就上浮，浮力小于重力就下沉。把不等式写出来，判断就清楚了。"},
+    quizFig:`<svg viewBox="0 0 260 120" role="img"><line x1="10" y1="46" x2="250" y2="46" stroke="#8b97a8"/><path d="M60 46 L200 46 L182 88 Q130 102 78 88 Z" fill="#eaf0fb" stroke="#2f6df0" stroke-width="2"/><text x="92" y="72" font-size="11" fill="#1f4fb0">船形排开更多水</text><text x="52" y="114" font-size="10" fill="#5d6b7e">V排↑ → 浮力↑，与重力平衡 → 漂浮</text></svg>`,
+    reason:{observe:"学生通过预设案例自述：知道浮力公式，但解释不了沉浮现象；暂无行为证据。",
+      strategy:"用铁钉与轮船对比锚定，聚焦『排开了多少水』。",
+      next:"选择题：轮船浮起的主要原因"},
+    reply:[
+      ["observe","你说你知道浮力公式，但解释不了钢铁轮船为什么能浮。我们先验证一下这个自述的卡点。"],
+      ["step","先不看公式：铁块进水就沉，可万吨钢铁造成的轮船却浮在水面。两者差在哪？想想『排开了多少水』。"],
+      ["try","把空瓶往水里按，按得越深手越费力，什么变大了？"]
+    ],
+    quiz:{q:"钢铁轮船能浮在水面，主要原因是？", opts:[
+      {t:"钢的密度比水小",ok:false},
+      {t:"船形排开更多水，获得更大浮力",ok:true},
+      {t:"轮船受到的重力很小",ok:false}
+    ], ok:"答对啦！船形增大了排开水的体积，浮力与重力平衡。",
+       no:"再想想：重力没变，变的是排开水的体积。"},
+    wrongHint:"钢的密度比水大，铁钉会沉。为什么钢铁做的船能浮？想想『船的形状排开了多少水』。",
+    wrongReveal:{observe:"两次都选错了，我们回到关键对比：同样钢铁，铁钉沉、轮船浮。",
+      step:"差别在形状：船形让排开水的体积大大增加，浮力大到与重力平衡，所以浮在水面。"},
+    wrongProfile:{diff:"浮力与排开水量的联系未建立，判断沉浮易凭直觉。",
+      basis:"在轮船浮起原因练习中，两次作答均未选中『排开水体积』选项。",
+      strategy:"用铁钉与船形对比锚定，聚焦『排开多少水』再验证。",
+      next:"试着解释：把空瓶往下按，按得越深越费力。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    firstProfile:{diff:"自述：能写出浮力公式，但不会解释沉浮现象；待验证。",
+      basis:"依据自选预设案例入口；尚无行为验证证据。",
+      strategy:"从『背公式』切换为『现象对比引导』。",
+      next:"完成一道沉浮判断练习以验证。",
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    afterProfile:{diff:"能写出公式，并初步建立浮力与排开水量的联系。",
+      basis:"你正确回答了船形排开更多水、获得更大浮力。",
+      strategy:"继续用新场景做迁移验证。",
+      next:"在新场景中判断潜水艇的沉浮。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:true,now:false},{t:"巩固迁移",done:false,now:true}]},
+    migration:{
+      observe:"现在换个场景：不是轮船，而是潜水艇。",
+      step:"潜水艇靠水舱充水、排水改变自身重力，浮力基本不变。",
+      try:"要下潜时，水舱应该充水还是排水？为什么？",
+      close:"对——下潜要充水：水舱充水后重力增大、浮力基本不变，重力大于浮力就下潜；要上浮就反过来排水。你已经把『改变自身重力』和沉浮联系起来了。",
+      fig:`<svg viewBox="0 0 260 150" role="img"><line x1="10" y1="20" x2="250" y2="20" stroke="#8b97a8" stroke-dasharray="4 3"/><text x="12" y="14" font-size="10" fill="#8b97a8">水面</text><ellipse cx="130" cy="96" rx="70" ry="24" fill="#eaf0fb" stroke="#2f6df0" stroke-width="2"/><rect x="106" y="86" width="48" height="20" rx="4" fill="#fff" stroke="#2f6df0"/><text x="118" y="100" font-size="10" fill="#1f4fb0">水舱</text><line x1="62" y1="42" x2="62" y2="64" stroke="#2c9d6e" stroke-width="2"/><path d="M57 58 L62 66 L67 58" fill="#2c9d6e"/><text x="26" y="38" font-size="10" fill="#2c9d6e">充水·重力↑·下潜</text><line x1="198" y1="66" x2="198" y2="44" stroke="#d98a1f" stroke-width="2"/><path d="M193 50 L198 42 L203 50" fill="#d98a1f"/><text x="168" y="80" font-size="10" fill="#d98a1f">排水·重力↓·上浮</text></svg>`,
+      check:{correct:[["充水"],["进水"],["注水"],["重力增大"],["重力变大"],["重力大于浮力"],["重力比浮力大"]],
+        wrong:[["排水"],["浮力增大"],["浮力变大"],["重力减小"],["重力变小"]]},
+      wrongMsg:"下潜要让重力大于浮力：排水会减小重力，反而上浮。想想水舱怎么做才能让重力变大。"
+    }
+  },
+  "语文":{ topic:"古诗 · 炼字", level:"初一",
+    cross:{subj:"英语",text:"英语诗歌也讲究『炼字』（diction）：一个动词能让整句活起来，正如一个『绿』字让江南岸有了生机。"},
+    reason:{observe:"学生通过预设案例自述：觉得诗句好但说不出好在哪；暂无表达证据。",
+      strategy:"用换字对比（『绿』与『到』）体会表达效果差异。",
+      next:"选择题：『绿』字妙处"},
+    reply:[
+      ["observe","你说你觉得『春风又绿江南岸』写得好，但说不出好在哪里。我们从这个感受开始。"],
+      ["step","换字对比：把『绿』换成『到』『入』『满』，读一读，哪个更有『动感』和『颜色』？"],
+      ["try","『绿』字让春风变成了什么样的存在？"]
+    ],
+    quiz:{q:"『春风又绿江南岸』中『绿』字妙在？", opts:[
+      {t:"形容词作动词，春风有了颜色与动感",ok:true},
+      {t:"更口语化、通俗易懂",ok:false},
+      {t:"音律更整齐",ok:false}
+    ], ok:"答对啦！一个字让整句活起来，这就是『炼字』的表达效果。",
+       no:"再想想：和『到』『入』相比，『绿』多了什么？"},
+    wrongHint:"把『到』和『绿』各读一遍：哪个词让你看到颜色、感到动作？",
+    wrongReveal:{observe:"两次都没选对，说明感觉有了，表达角度还没找对。",
+      step:"『绿』是形容词作动词：春风把江南岸『染绿』了，颜色、动感、生机一起出现——这就是『炼字』的表达效果。"},
+    wrongProfile:{diff:"能感受诗句之美，但尚未掌握『炼字』的表达角度。",
+      basis:"在『绿』字赏析练习中，两次作答均未选中『形容词作动词』选项。",
+      strategy:"用换字对比强化表达效果体会，再换一个学过的字练习。",
+      next:"试着赏析『红杏枝头春意闹』的『闹』字。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    firstProfile:{diff:"自述：能感受诗句之美，但说不出妙处；待验证。",
+      basis:"依据自选预设案例入口；尚无行为验证证据。",
+      strategy:"从『感觉』切换为『换字对比表达』。",
+      next:"完成一道炼字赏析练习以验证。",
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    afterProfile:{diff:"能感受美，并初步学会用『炼字』角度表达。",
+      basis:"你正确回答了『绿』是形容词作动词、有颜色与动感。",
+      strategy:"继续用新诗句做迁移验证。",
+      next:"赏析『红杏枝头春意闹』的『闹』字。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:true,now:false},{t:"巩固迁移",done:false,now:true}]},
+    migration:{
+      observe:"现在换一句：『红杏枝头春意闹』。",
+      step:"『闹』字本来写声音，这里却用来写春景。",
+      try:"『闹』字写出了怎样的感觉？换成『浓』行不行？",
+      close:"『闹』妙在通感：本是写声音的字，却用来写春景，仿佛枝头的春意喧闹有声；换成『浓』只剩程度，没了生机与动感。",
+      fig:`<svg viewBox="0 0 260 104" role="img"><text x="16" y="28" font-size="14" fill="#243042">春风又<tspan fill="#2c9d6e" font-weight="bold">绿</tspan>江南岸</text><text x="16" y="58" font-size="14" fill="#8b97a8">春风又到江南岸</text><text x="16" y="90" font-size="11" fill="#2c9d6e">「绿」有颜色、有动感；「到」只交代动作</text></svg>`,
+      check:{correct:[["通感"],["声音"],["听觉"],["热闹"],["生机"],["喧闹"],["以声"]],
+        wrong:[["浓","更好"],["换成浓"]]},
+      wrongMsg:"『浓』只表示程度；『闹』是把声音用来写春景——想想『闹』借的是哪种感官。"
+    }
+  },
+  "英语":{ topic:"单词 · 句型", level:"初一",
+    cross:{subj:"语文",text:"中文说『很喜欢』，程度词在动词前；英语却把 very much 放句末。两种语言一对比，语序规则就清楚了。"},
+    reason:{observe:"学生通过预设案例自述：背了单词但造句是中文语序；暂无造句证据。",
+      strategy:"用正误句对比，引导发现程度状语的位置规则。",
+      next:"选择题：正误句判断"},
+    reply:[
+      ["observe","你说你背了单词，但一造句就是中文语序。我们先验证一下这个自述的卡点。"],
+      ["step","对比两句：I very like English. 和 I like English very much. 读一读，哪句顺口？"],
+      ["try","very much 应该放在哪里？为什么不能放在 like 前面？"]
+    ],
+    quiz:{q:"哪一句是正确的？", opts:[
+      {t:"I very like English.",ok:false},
+      {t:"I like English very much.",ok:true},
+      {t:"Very much I like English.",ok:false}
+    ], ok:"答对啦！very much 是程度状语，习惯放在句末。",
+       no:"再想想：英语的程度状语一般不放在动词前。"},
+    wrongHint:"very much 是程度状语，英语里它一般不放在动词前面，想想它该放哪。",
+    wrongReveal:{observe:"两次都选错了，关键在语序：英语状语的位置和中文不一样。",
+      step:"正确句是 I like English very much. 程度状语 very much 习惯放句末，不能像中文『很喜欢』那样插在动词前。"},
+    wrongProfile:{diff:"中文语序干扰明显，程度状语位置规则未掌握。",
+      basis:"在正误句判断练习中，两次作答均选择了中文语序的 I very like。",
+      strategy:"用正误句对比强化状语位置，再换新句型练习。",
+      next:"用『…very much』造一个自己的句子，注意状语位置。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    firstProfile:{diff:"自述：背了单词但造句中式语序；待验证。",
+      basis:"依据自选预设案例入口；尚无行为验证证据。",
+      strategy:"从『背单词』切换为『正误句对比』。",
+      next:"完成一道语序判断练习以验证。",
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    afterProfile:{diff:"初步掌握程度状语的位置规则。",
+      basis:"你正确选择了 I like English very much.",
+      strategy:"继续用新句型做迁移验证。",
+      next:"用 There be 句型描述一个场景。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:true,now:false},{t:"巩固迁移",done:false,now:true}]},
+    migration:{
+      observe:"现在换个句型：表达『某处有某物』。",
+      step:"中文说『桌子上有一本书』，英语用 There be 句型。",
+      try:"『房间里有三个人』用英语怎么说？be 动词用 is 还是 are？",
+      close:"对——There are three people in the room. 房间里是三个人，be 动词要用 are。你已经会把 There be 句型和主谓一致一起用了。",
+      fig:`<svg viewBox="0 0 260 100" role="img"><g font-size="11"><rect x="8" y="14" width="30" height="22" rx="4" fill="#eaf0fb" stroke="#2f6df0"/><text x="18" y="29" fill="#1f4fb0">I</text><rect x="44" y="14" width="40" height="22" rx="4" fill="#eaf0fb" stroke="#2f6df0"/><text x="51" y="29" fill="#1f4fb0">like</text><rect x="90" y="14" width="60" height="22" rx="4" fill="#eaf0fb" stroke="#2f6df0"/><text x="96" y="29" fill="#1f4fb0">English</text><rect x="156" y="14" width="86" height="22" rx="4" fill="#eafaf2" stroke="#2c9d6e"/><text x="162" y="29" fill="#1d7a52">very much ✓</text></g><text x="8" y="62" font-size="11" fill="#a83d3a" text-decoration="line-through">I very like English.（×）</text><text x="8" y="86" font-size="11" fill="#5d6b7e">程度状语 very much 习惯放句末，不插在动词前</text></svg>`,
+      check:{correct:[["are"],["复数"],["three"]],
+        wrong:[["is"]]},
+      wrongMsg:"注意主语：『three people』是复数，be 动词要用复数形式 are。"
+    }
+  },
+  "化学":{ topic:"方程式 · 现象", level:"初三",
+    cross:{subj:"物理",text:"燃烧发光放热是能量转化：化学能变成热能和光能。从物理的能量视角看，现象更好记。"},
+    quizFig:`<svg viewBox="0 0 260 110" role="img"><line x1="60" y1="70" x2="200" y2="70" stroke="#8b97a8" stroke-width="3"/><g stroke="#d98a1f" stroke-width="2"><line x1="130" y1="64" x2="130" y2="34"/><line x1="112" y1="66" x2="96" y2="40"/><line x1="148" y1="66" x2="164" y2="40"/></g><circle cx="118" cy="88" r="3" fill="#243042"/><circle cx="132" cy="92" r="3" fill="#243042"/><circle cx="146" cy="88" r="3" fill="#243042"/><text x="74" y="26" font-size="11" fill="#d98a1f">火星四射 · 放热</text><text x="62" y="106" font-size="10" fill="#5d6b7e">生成黑色固体（不是白烟、不是淡蓝火焰）</text></svg>`,
+    reason:{observe:"学生通过预设案例自述：背得出方程式但描述不了实验现象；暂无现象证据。",
+      strategy:"还原铁丝燃烧场景，按『光、热、产物』三要素观察。",
+      next:"选择题：铁丝燃烧的现象"},
+    reply:[
+      ["observe","你说你背得出方程式，但描述不了实验里发生了什么。我们先验证一下这个自述的卡点。"],
+      ["step","还原场景：铁丝在氧气中燃烧。观察三件事——光、热、产物的颜色。"],
+      ["try","燃烧后生成的物质是什么颜色？这说明什么？"]
+    ],
+    quiz:{q:"铁丝在氧气中燃烧的现象是？", opts:[
+      {t:"火星四射，生成黑色固体",ok:true},
+      {t:"产生大量白烟",ok:false},
+      {t:"发出淡蓝色火焰",ok:false}
+    ], ok:"答对啦！火星四射、放热、生成黑色固体，这是现象级描述。",
+       no:"再想想：白烟是红磷燃烧，淡蓝色火焰是硫在空气中燃烧。"},
+    wrongHint:"白烟是红磷燃烧，淡蓝色火焰是硫在空气中。铁丝燃烧是什么样的？",
+    wrongReveal:{observe:"两次都选错了，不同实验的现象容易混，我们把它们理一遍。",
+      step:"铁丝在氧气中燃烧：火星四射、放热、生成黑色固体。白烟属于红磷，淡蓝色火焰属于硫。"},
+    wrongProfile:{diff:"方程式与实验现象的对应混乱，易混淆不同实验的现象。",
+      basis:"在铁丝燃烧现象练习中，两次作答均选择了其他实验的现象。",
+      strategy:"按『光、热、产物』三要素整理现象，与其他实验对比区分。",
+      next:"描述镁条燃烧的现象，并与铁丝对比。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    firstProfile:{diff:"自述：背得出方程式，但不会描述实验现象；待验证。",
+      basis:"依据自选预设案例入口；尚无行为验证证据。",
+      strategy:"从『背符号』切换为『场景还原观察』。",
+      next:"完成一道现象判断练习以验证。",
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    afterProfile:{diff:"初步建立方程式与实验现象的对应。",
+      basis:"你正确回答了铁丝燃烧火星四射、生成黑色固体。",
+      strategy:"继续用新反应做迁移验证。",
+      next:"描述镁条在空气中燃烧的现象。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:true,now:false},{t:"巩固迁移",done:false,now:true}]},
+    migration:{
+      observe:"现在换个反应：镁条在空气中燃烧。",
+      step:"同样观察『光、热、产物』三件事。",
+      try:"镁条燃烧生成什么颜色的固体？和铁丝的现象有何不同？",
+      close:"镁条燃烧：发出耀眼的白光、放热、生成白色固体；和铁丝的『火星四射、黑色固体』完全不同——你已经会按『光、热、产物』描述新反应了。",
+      fig:`<svg viewBox="0 0 260 110" role="img"><rect x="60" y="66" width="140" height="9" rx="4" fill="#dde3ec" stroke="#8b97a8"/><g stroke="#d98a1f" stroke-width="2"><line x1="130" y1="60" x2="130" y2="28"/><line x1="112" y1="62" x2="94" y2="36"/><line x1="148" y1="62" x2="166" y2="36"/></g><text x="78" y="22" font-size="11" fill="#d98a1f">耀眼白光 · 放热</text><circle cx="120" cy="90" r="3" fill="#8b97a8"/><circle cx="134" cy="93" r="3" fill="#8b97a8"/><circle cx="148" cy="90" r="3" fill="#8b97a8"/><text x="78" y="106" font-size="10" fill="#5d6b7e">生成白色固体（铁丝是黑色固体）</text></svg>`,
+      check:{correct:[["白色"],["白光"]],
+        wrong:[["黑色"],["火星四射"],["白烟"]]},
+      wrongMsg:"注意：铁丝燃烧才是黑色固体。镁条燃烧发出耀眼白光，生成的是白色固体——再想想光是什么颜色、产物是什么颜色。"
+    }
+  },
+  "生物":{ topic:"结构 · 功能", level:"初二",
+    cross:{subj:"数学",text:"绒毛用『褶皱』把表面积变大——同样的长度，褶皱越多面积越大，这是几何里的面积思想。"},
+    reason:{observe:"学生通过预设案例自述：背得出结构名称但不会解释功能；暂无功能推理证据。",
+      strategy:"用揉皱的纸的表面积类比，理解『结构服务功能』。",
+      next:"选择题：小肠绒毛的意义"},
+    reply:[
+      ["observe","你说你背得出小肠绒毛这些结构，但说不清它们为什么长这样。我们先验证一下这个自述的卡点。"],
+      ["step","想象一张光滑的纸和揉皱的纸，哪个表面积大？绒毛就是小肠内壁的『褶皱』。"],
+      ["try","表面积变大，对吸收营养有什么好处？"]
+    ],
+    quiz:{q:"小肠内壁有大量绒毛，主要意义是？", opts:[
+      {t:"大大增加吸收的表面积",ok:true},
+      {t:"让蠕动速度更快",ok:false},
+      {t:"方便分泌消化液",ok:false}
+    ], ok:"答对啦！绒毛结构增大表面积，结构是为功能服务的。",
+       no:"再想想：绒毛的『褶皱』改变的是表面积，不是速度。"},
+    wrongHint:"绒毛是小肠内壁的『褶皱』，褶皱改变的是什么：面积、速度还是分泌？",
+    wrongReveal:{observe:"两次都选错了，回到那张揉皱的纸：褶皱改变的是面积。",
+      step:"绒毛大大增加了小肠的吸收表面积，结构是为功能服务的；蠕动速度和消化液与绒毛形态无关。"},
+    wrongProfile:{diff:"结构与功能的联系未建立，答结构题易被功能词干扰。",
+      basis:"在绒毛意义练习中，两次作答均未选中『增大吸收表面积』。",
+      strategy:"用光滑纸与揉皱纸类比强化表面积直觉，再换新结构。",
+      next:"分析肺泡结构与气体交换的关系。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    firstProfile:{diff:"自述：背得出结构名称，但不会联系功能；待验证。",
+      basis:"依据自选预设案例入口；尚无行为验证证据。",
+      strategy:"从『背结构』切换为『功能推理』。",
+      next:"完成一道结构功能练习以验证。",
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:false,now:true},{t:"巩固迁移",done:false,now:false}]},
+    afterProfile:{diff:"初步建立『结构服务功能』的观念。",
+      basis:"你正确回答了绒毛增大吸收表面积。",
+      strategy:"继续用新结构做迁移验证。",
+      next:"分析肺泡结构与气体交换的关系。",
+      changed:["diff","basis","strategy","next"],
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:true,now:false},{t:"巩固迁移",done:false,now:true}]},
+    migration:{
+      observe:"现在换个结构：肺里的肺泡。",
+      step:"肺泡也是又多、壁又薄的『小口袋』。",
+      try:"肺泡与血液交换气体，靠的是什么？和绒毛有什么共同点？",
+      close:"对——肺泡数量多、壁又薄，和小肠绒毛一样，都是为了增大交换的表面积。你已经会用『结构服务功能』分析新结构了。",
+      fig:`<svg viewBox="0 0 260 104" role="img"><text x="18" y="18" font-size="11" fill="#8b97a8">光滑内壁</text><line x1="18" y1="40" x2="104" y2="40" stroke="#8b97a8" stroke-width="2"/><text x="140" y="18" font-size="11" fill="#1f4fb0">有绒毛（褶皱）</text><path d="M140 44 q6 -24 12 0 q6 -24 12 0 q6 -24 12 0 q6 -24 12 0 q6 -24 12 0" stroke="#2f6df0" stroke-width="2" fill="none"/><text x="18" y="78" font-size="11" fill="#5d6b7e">同样的长度，绒毛让表面积大大增加</text><text x="18" y="96" font-size="11" fill="#5d6b7e">→ 吸收营养 / 交换气体更快（结构服务功能）</text></svg>`,
+      check:{correct:[["表面积"],["面积"],["又大又薄"],["多而薄"],["扩散"]],
+        wrong:[["速度"],["蠕动"]]},
+      wrongMsg:"肺泡和绒毛的思路一样：『又多又薄』的结构增大了表面积。用『表面积』这个想法再想想。"
+    }
+  }
+};
+/* 统一补齐：未单独配练习卡错答图的学科，迁移图同时用于错题讲解 */
+for(const s of Object.values(SUBJECT_SCRIPTS)){ if(!s.quizFig && s.migration && s.migration.fig) s.quizFig=s.migration.fig; }
+
+/* ============ 剧本模式：输入路由 / 案例执行 / 迁移判定（均为可独立测试函数） ============ */
+/* 输入路由：entry=预设入口（demo/learn/photo/continue）或 null（自由输入）。
+   自由输入绝不触发学科剧本；未匹配预设时不生成画像/阶段/完成状态 */
+async function scriptedReply(text, files, aiB){
+  const entry=window.__lastQuick||null;
+  // 上传图片即进入图片分析案例（无需另点入口）；取消选择无文件时不会走到这里，不产生空消息
+  if(!entry && files && files.length){ await runPhotoCase(aiB); return; }
+  const st=getStage();
+  // 1) 迁移阶段等待作答：自由输入先按迁移回答判定（显式点新预设入口除外）
+  if(st==="migration" && !entry){ handleMigrationAnswer(text, aiB); return; }
+  // 2) 闭环已完成后：自由输入引导选新案例，绝不重播旧收尾（明示剧本模式与预设案例边界）
+  if(st==="completed" && !entry){ renderCaseGuide(aiB,"上一轮案例闭环已完成（完成状态已保留）。当前为剧本演示模式，开始新一轮学习请选择预设教学案例："); return; }
+  // 3) 预设演示入口：只有明确点击入口才进入对应剧本
+  if(entry==="demo"){ await runDemoCase(aiB); return; }
+  if(entry==="photo"){ await runPhotoCase(aiB); return; }
+  if(entry==="continue"){ await runContinueCase(aiB); return; }
+  if(entry==="learn"){ await runLearnCase(SUBJECT_SCRIPTS[state.subject]||SUBJECT_SCRIPTS["数学"], aiB, text); return; }
+  // 4) 自由输入：剧本模式不套用无关剧本，如实告知边界并给出可点击的预设案例
+  renderCaseGuide(aiB,"当前为剧本演示模式：自由问题需要启动真实模型服务（配置 Key，见部署说明）。\n以下是当前支持的预设教学案例，点击即可体验：");
+}
+
+/* 迁移答案判定：正确 / 错误 / 证据不足 / 不会——四态分明，不确定时宁可待验证也不乐观通过 */
+function judgeMigration(sc, text){
+  const t=(text||"").trim();
+  if(!t) return {v:"insufficient"};
+  if(/不知道|不会|想不出|答不上|不懂|没思路|不清楚|说不上|太难|忘了|不记得/.test(t)) return {v:"stuck"};
+  if(t.length<4) return {v:"insufficient"};
+  const ck=(sc.migration&&sc.migration.check)||{};
+  for(const g of (ck.wrong||[])){ if(g.every(w=>t.includes(w))) return {v:"wrong"}; }
+  for(const g of (ck.correct||[])){ if(g.every(w=>t.includes(w))) return {v:"correct"}; }
+  return {v:"insufficient"};
+}
+
+function handleMigrationAnswer(text, aiB){
+  const sc=caseScript[state.subject]||SUBJECT_SCRIPTS[state.subject]||SUBJECT_SCRIPTS["数学"];
+  const j=judgeMigration(sc, text);
+  const fig=sc.migration&&sc.migration.fig;
+  if(j.v==="stuck"){
+    // 不会：换讲法、用图讲，但不判定通过
+    const parts=[["observe","一时答不上没关系，我们换种讲法：对着图把道理过一遍。"]];
+    if(fig) parts.push(["fig",fig]);
+    parts.push(["step",(sc.migration&&sc.migration.close)||""]);
+    parts.push(["try","看完图再试一次，可以先说说你从图里看到了什么。"]);
+    fillBlock(aiB,parts); persistSession(); return; // 保持 migration 阶段
+  }
+  if(j.v==="wrong"){
+    // 错误：指出具体错误 + 一步提示，允许再答（状态可见：错答不完成闭环）
+    const parts=[["observe",(sc.migration&&sc.migration.wrongMsg)||"这个回答有偏差，我们再看图。"]];
+    if(fig) parts.push(["fig",fig]);
+    parts.push(["step","先找出错在哪，再重新作答。"]);
+    parts.push(["try",sc.migration.try]);
+    fillBlock(aiB,parts); persistSession(); return; // 保持 migration 阶段
+  }
+  if(j.v==="insufficient"){
+    // 证据不足：无关/太短/无法判断——要求重新表达，不乐观通过
+    fillBlock(aiB,[
+      ["observe","这个回答我还判断不了你的想法——证据不足，不能草率下结论。"],
+      ["step","试着用『……，所以……』来回答；说错没关系，说出你的想法就行。"],
+      ["try",sc.migration.try]]);
+    persistSession(); return; // 保持 migration 阶段
+  }
+  completeMigration(sc, aiB); // 只有「正确」才完成闭环
+}
+
+/* 闭环完成（仅迁移验证通过后调用）：收尾 + 画像完成态 + 学习进度写入学习背景 */
+function completeMigration(sc, aiB){
+  const fig=sc.migration&&sc.migration.fig;
+  const parts=[["observe",(sc.migration&&sc.migration.close)||"你答对了迁移题，这个知识点正在从『听懂』走向『会用』。"]];
+  if(fig) parts.push(["fig",fig]);
+  parts.push(["step","本轮闭环完成：定位卡点 → 引导验证 → 巩固迁移（迁移题已答对）。可以选新案例继续。"]);
+  fillBlock(aiB,parts);
+  if(profileData){
+    renderProfile({...profileData,
+      next:"本轮闭环已完成：选一个新案例继续。",
+      stages:[{t:"已互动",done:true,now:false},{t:"定位卡点",done:true,now:false},{t:"引导验证",done:true,now:false},{t:"巩固迁移",done:true,now:false}]},
+      ["next"]);
+  }
+  // 跨会话记忆：验证通过才写入学习背景（不提前、不乐观）
+  const dNow=new Date();
+  const line=`${dNow.getMonth()+1}/${dNow.getDate()} ${state.subject}·${sc.topic||"本轮知识点"}：迁移验证题答对，闭环完成（定位卡点→引导验证→巩固迁移）；下一步建议新案例或更难的变式。`;
+  const pl=(state.profile||"").split("\n").filter(s=>s.trim());
+  pl.push(line); state.profile=pl.slice(-6).join("\n");
+  toast("迁移验证通过，本轮进度已记入学习背景");
+  setStage("completed");
+  persistSession();
+}
+
+/* 预设案例：当前学科闭环剧本（仅用户明确点击入口时执行） */
+async function runLearnCase(sc, aiB, text){
+  caseScript[state.subject]=sc;
+  setStage("teaching");
+  await sleepMs(300);
+  renderWhyTeach(sc.reason, true);
+  let parts=sc.reply.map(p=>[p[0],p[1]]);
+  const quote=(text||"").trim();
+  if(quote && parts.length && parts[0][0]==="observe"){
+    parts[0][1]="我听到你说：「"+(quote.length>36?quote.slice(0,36)+"…":quote)+"」。\n"+parts[0][1];
+  }
+  // 预设案例边界标注：剧本内容不随年级变化，不假装已做年级适配
+  if(sc.level){
+    parts.unshift(["note","预设演示案例（适用年级："+sc.level+"）——剧本模式下切换年级不改变案例内容；真实年级适配在真实模型模式生效。"]);
+  }
+  fillBlock(aiB, parts);
+  await sleepMs(260);
+  // 跨学科：预设具体提示（明确标注）；案例无跨学科内容时如实说明
+  if(state.cross){
+    if(sc.cross){
+      aiBlock([
+        ["observe","预设跨学科提示（"+sc.cross.subj+"视角）——剧本模式为固定提示；真实模型模式支持动态联合提问。"],
+        ["step",sc.cross.text]
+      ]);
+    }else{
+      aiBlock([["observe","本案例暂无预设跨学科内容，跨学科开关在此不生效。"]]);
+    }
+  }
+  if(sc.quiz){ await sleepMs(260); renderQuiz(sc.quiz, sc); setStage("quiz"); }
+  if(!profileData && sc.firstProfile){
+    renderProfile(sc.firstProfile, ["diff","basis","strategy","next"]);
+    applyTopic(sc.topic||`${state.subject} · 进行中`);
+  }
+  persistSession();
+}
+
+/* 预设案例：题目图片分析（图片不宣称被看懂，引导口述题意；离线 OCR 可提取题面文字） */
+async function runPhotoCase(aiB){
+  caseScript[state.subject]=SCRIPT.photo;
+  setStage("teaching");
+  await sleepMs(300);
+  renderWhyTeach(SCRIPT.photo.reason, true);
+  fillBlock(aiB, SCRIPT.photo.reply.map(p=>[p[0],p[1]]));
+  if(state.cross){ aiBlock([["observe","本案例暂无预设跨学科内容，跨学科开关在此不生效。"]]); }
+  if(!profileData && SCRIPT.photo.firstProfile){
+    renderProfile(SCRIPT.photo.firstProfile, ["diff","basis","strategy","next"]);
+    applyTopic("题目分析");
+  }
+  persistSession();
+}
+
+/* 预设入口：继续上次任务——有会话则引导回忆进度，无会话则如实告知 */
+async function runContinueCase(aiB){
+  if(!hasSession(state.subject)){
+    const g=SUBJECT_GUIDE[state.subject]||SUBJECT_GUIDE["数学"];
+    fillBlock(aiB,[
+      ["observe","这个学科还没有进行中的学习会话，暂时没有可以回到的练习进度。"],
+      ["step","我们现在就开始一轮新闭环：选一个你最想弄懂的卡点。"],
+      ["try","可以从这句话开始："+g.starter]
+    ]);
+    return;
+  }
+  fillBlock(aiB,[
+    ["observe","已回到本学科的学习记录（上方是之前的对话）。"],
+    ["step","继续之前，先确认上次停在哪里。"],
+    ["try","用一句话说说：你上次练的是什么，停在了哪里？我再给你一道针对性的变式。"]
+  ]);
+}
+
+/* 预设案例：90 秒完整演示（斜率，滑块选 k；消息/图像/讲解全程用同一个 k） */
+let demoK=0;
+function slopeFig(k){
+  const y=Math.max(10,Math.min(150,80-k*16));
+  const tag=k>0?"向右上升（k&gt;0）":k<0?"向右下降（k&lt;0）":"水平线（k=0）";
+  return `<svg viewBox="0 0 320 160" role="img"><line x1="20" y1="80" x2="300" y2="80" stroke="#cdd8e6"/><line x1="160" y1="12" x2="160" y2="148" stroke="#cdd8e6"/><line x1="20" y1="80" x2="300" y2="${y}" stroke="#2f6df0" stroke-width="3"/><text x="26" y="26" font-size="12" fill="#1f4fb0">k=${k} · ${tag}</text></svg>`;
+}
+async function runDemoCase(aiB){
+  const k=demoK, sc=SUBJECT_SCRIPTS["数学"];
+  caseScript[state.subject]=sc;
+  setStage("teaching");
+  renderWhyTeach({observe:"学生通过滑块主动选择了 k="+k+" 并要求讲解斜率与图像的关系（操作证据）。",
+    strategy:"用所选 k 画图直观化，再用爬山类比建立符号与方向的对应。",
+    next:"选择题：y=-2x+3 的图像方向"}, true);
+  const explain=k>0?"k>0：向右走是『上坡』，图像向右上升；|k| 越大坡越陡。"
+              :k<0?"k<0：向右走是『下坡』，图像向右下降；|k| 越大坡越陡。"
+              :"k=0：图像是水平线，不上也不下。";
+  fillBlock(aiB,[
+    ["observe","用你选的 k="+k+" 来讲。看这张图："],
+    ["fig",slopeFig(k)],
+    ["step",explain],
+    ["try","记住：符号定方向，绝对值定陡缓。下面做一道题验证。"]
+  ]);
+  await sleepMs(260);
+  renderQuiz(sc.quiz, sc); setStage("quiz");
+  if(!profileData && sc.firstProfile){
+    renderProfile(sc.firstProfile, ["diff","basis","strategy","next"]);
+    applyTopic(sc.topic);
+  }
+  persistSession();
+}
+
+/* 预设案例引导：剧本模式自由输入的唯一出口——给可点击案例，不产生画像/阶段副作用 */
+function renderCaseGuide(aiB, intro){
+  const g=SUBJECT_GUIDE[state.subject]||SUBJECT_GUIDE["数学"];
+  aiB.innerHTML="";
+  const wrap=document.createElement("div"); wrap.className="ai-block";
+  wrap.innerHTML=`<div class="blk"><div class="c">${md(intro)}</div></div>`;
+  const box=document.createElement("div"); box.className="blk case-btns";
+  const mk=(label,desc,fn)=>{
+    const b=document.createElement("button"); b.type="button"; b.className="case-btn";
+    b.innerHTML=`<b>预设演示案例</b><span>${escapeHtml(label)}</span><small>${escapeHtml(desc)}</small>`;
+    b.onclick=fn; box.appendChild(b);
+  };
+  mk("▶ 开始 90 秒完整演示 · 数学（一次函数斜率）","滑块画图 + 选择题 + 迁移验证 + 画像更新",()=>{ window.__lastQuick="demo"; openDemo(); });
+  mk(g.learn.t, state.subject+" · "+g.learn.d, ()=>{ window.__lastQuick="learn"; send(g.starter,[]); });
+  mk("继续上次的学习任务","基于学习记录回到上次练习",()=>{ window.__lastQuick="continue"; send("继续上次的学习任务。",[]); });
+  wrap.appendChild(box); aiB.appendChild(wrap); scrollDown();
+}
+/* 剧本节奏：尊重系统减弱动效设置；总延迟控制在 1 秒内 */
+const reducedMotion=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+function sleepMs(ms){ return reducedMotion ? Promise.resolve() : new Promise(r=>setTimeout(r,ms)); }
+
+function renderQuiz(q, sc){
+  const b=addMsg("ai");
+  const box=document.createElement("div"); box.className="quiz";
+  box.innerHTML=`<div class="q">${escapeHtml(q.q)}</div><div class="opts"></div>
+    <div class="feedback qfb"></div>`;
+  const opts=box.querySelector(".opts");
+  q.opts.forEach((o,i)=>{
+    const ob=document.createElement("button"); ob.className="opt";
+    ob.innerHTML=`<span class="mk">${String.fromCharCode(65+i)}</span><span>${escapeHtml(o.t)}</span>`;
+    opts.appendChild(ob);
+  });
+  bindQuizOpts(box, q, sc);
+  b.appendChild(box); scrollDown();
+}
+/* 选项绑定逻辑：新出的卡与恢复会话重新点亮的卡共用 */
+function bindQuizOpts(box, q, sc){
+  let wrongs=0;
+  const wrongTotal=q.opts.filter(o=>!o.ok).length;
+  box.querySelectorAll(".opt").forEach((ob,i)=>{
+    const o=q.opts[i]; if(!o){ ob.disabled=true; return; }
+    ob.disabled=false;
+    ob.onclick=()=>{
+      if(box._done||ob.disabled) return;
+      const fb=box.querySelector(".qfb");
+      if(o.ok){
+        box._done=true;
+        box.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+        ob.classList.add("correct");
+        fb.className="feedback qfb show ok";
+        fb.textContent=q.ok;
+        onQuizCorrect(sc);
+        reportBackendQuiz(sc, q, o.t, true); // 真实模式：把验证结果回传后端，闭环继续
+      }else{
+        wrongs++; ob.disabled=true; ob.classList.add("wrong");
+        if(wrongs<wrongTotal){
+          // 首次答错：只禁用该选项，给针对性提示并允许再试一次——错误分支上闭环不断
+          fb.className="feedback qfb show no";
+          fb.textContent=(q.no?q.no+" ":"")+"提示："+(sc.wrongHint||"再读一遍题目的条件。");
+        }else{
+          // 第二次答错：揭示正确答案，切换讲解角度并把错题证据记入画像
+          box._done=true;
+          box.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+          const right=[...box.querySelectorAll(".opt")].find((c,idx)=>q.opts[idx].ok); if(right) right.classList.add("correct");
+          fb.className="feedback qfb show no";
+          fb.textContent=q.no;
+          onQuizWrong(sc);
+          reportBackendQuiz(sc, q, o.t, false); // 真实模式：错题证据回传后端
+        }
+      }
+    };
+  });
+}
+/* 恢复会话后的练习卡处理：已作答的保持历史状态（禁用）；未作答的按题干匹配剧本重新绑定，回到记录后能继续作答 */
+function hydrateQuizzes(){
+  stream.querySelectorAll(".quiz").forEach(box=>{
+    if(box.querySelector(".feedback.show")){ box._done=true; box.querySelectorAll(".opt").forEach(o=>o.disabled=true); return; }
+    const qText=(box.querySelector(".q")||{}).textContent||"";
+    let match=null;
+    for(const s of Object.values(SUBJECT_SCRIPTS)){ if(s.quiz && s.quiz.q===qText){ match=s; break; } }
+    if(!match){ box._done=true; box.querySelectorAll(".opt").forEach(o=>o.disabled=true); return; }
+    box._done=false; bindQuizOpts(box, match.quiz, match);
+  });
+}
+
+/* 真实模式练习卡：后端出题，无剧本数据；答错走提示/揭示，画像由后端下一轮 event: profile 如实更新，前端不编造 */
+function renderBackendQuiz(qz){
+  const sc={
+    wrongHint:qz.hint||"再看看题目条件，逐个排除。",
+    wrongReveal:{observe:"这道验证题两次都没选对，没关系——我们正好找到了要强化的点。",
+      step:qz.reveal||qz.no||"把这个知识点再钉一遍，下一条消息我换个角度讲。"},
+    wrongProfile:null, migration:null, afterProfile:null
+  };
+  renderQuiz(qz, sc);
+}
+
+/* 真实模式练习卡作答回传：写入后端会话上下文并按证据更新画像，让闭环继续（剧本卡不调用） */
+async function reportBackendQuiz(sc, q, chosen, correct){
+  if(sc && (sc.migration || sc.afterProfile || sc.wrongProfile)) return; // 剧本卡走前端剧本，不回传
+  if(backendOK!==true) return;
+  const b=await apiBase();
+  if(b===null) return;
+  try{
+    const r=await fetchT(b+"/api/quiz",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({subject:state.subject, grade:state.grade, q:(q&&q.q)||"", chosen:chosen||"", correct:!!correct})},20000);
+    const j=await r.json();
+    if(j && j.ok){
+      if(j.text){ const ab=addMsg("ai"); ab.innerHTML=md(j.text); scrollDown(); }
+      if(j.profile) renderProfile(j.profile, ["diff","basis","strategy","next"]);
+      if(j.next_quiz) renderBackendQuiz(j.next_quiz); // 答对后自动下发“下一步”练习卡，闭环延续
+      persistSession();
+    }
+  }catch(e){ /* 回传失败不阻断：作答反馈已在前端展示，可下一条消息继续 */ }
+}
+
+/* 答对后：剧本卡走迁移验证+画像更新；真实模式卡无剧本数据，仅确认并落盘 */
+function onQuizCorrect(sc){
+  sc = sc || SUBJECT_SCRIPTS[state.subject] || SUBJECT_SCRIPTS["数学"];
+  const subj=state.subject;
+  setTimeout(()=>{
+    if(state.subject!==subj) return; // 已切学科：放弃延迟渲染，防止主题/画像/阶段串到别的学科
+    if(sc.migration){
+      const partsM=[["observe", sc.migration.observe],["step", sc.migration.step]];
+      if(sc.migration.fig) partsM.push(["fig", sc.migration.fig]); // 迁移题搭配示意图，抽象问题可视化
+      partsM.push(["try", sc.migration.try]);
+      aiBlock(partsM);
+      setStage("migration"); caseScript[state.subject]=sc; // 学生下一条回复进入迁移判定
+    }
+    if(sc.afterProfile) renderProfile(sc.afterProfile, sc.afterProfile.changed);
+    // 最近主题（剧本卡才有 topic；真实模式卡不编造主题）
+    if(sc.topic) applyTopic(sc.topic);
+    persistSession();
+  }, 500);
+}
+/* 两次答错后：揭示答案 + 换角度讲解 + 画像记录错题证据（错误分支也要闭环） */
+function onQuizWrong(sc){
+  sc = sc || SUBJECT_SCRIPTS[state.subject] || SUBJECT_SCRIPTS["数学"];
+  const subj=state.subject;
+  setTimeout(()=>{
+    if(state.subject!==subj) return; // 已切学科：放弃延迟渲染，防止跨学科串状态
+    if(sc.wrongReveal){
+      const partsW=[["observe", sc.wrongReveal.observe]];
+      const figW=sc.quizFig||(sc.migration&&sc.migration.fig);
+      if(figW) partsW.push(["fig", figW]); // 错题讲解也配图，不只靠纯文字
+      partsW.push(["step", sc.wrongReveal.step]);
+      aiBlock(partsW);
+    }
+    if(sc.wrongProfile) renderProfile(sc.wrongProfile, sc.wrongProfile.changed||["diff","basis","strategy","next"]);
+    persistSession();
+  }, 500);
+}
+/* ============ 最近学习记录 = 话题级会话存档列表（v3：直接读会话存档，每条记录都是可进入的会话） ============ */
+function renderRecent(){
+  const store=loadStore();
+  const rf=$("#recentFilter");
+  const kw=(rf&&rf.value||"").trim().toLowerCase();
+  const curSid=currentSid();
+  const curRec=store[curSid];
+  const cur=(curRec&&curRec.started)?`<div class="recent-item"><b>${escapeHtml(state.topic||curRec.topic||"进行中")}</b><span class="recent-now">进行中</span></div>`:"";
+  const sids=Object.keys(store).filter(k=>k!=="__meta" && store[k] && store[k].started && (store[k].msgs||[]).length);
+  let rows=sids.map(sid=>({sid, h:store[sid]})).sort((a,b)=>(b.h.ts||"").localeCompare(a.h.ts||""));
+  if(kw) rows=rows.filter(x=>((x.h.topic||"")+" "+(x.h.subject||"")).toLowerCase().indexOf(kw)>=0);
+  const items=rows.filter(x=>x.sid!==curSid).map(x=>`<button type="button" class="recent-item" data-sid="${escapeHtml(x.sid)}" title="点击进入该会话"><b>${escapeHtml(x.h.topic||"未命名")}</b><span class="recent-ts">${escapeHtml(x.h.subject||"")} · ${escapeHtml(x.h.ts||"")}</span></button>`).join("");
+  const emptyTxt = kw ? `<span class="none">无匹配记录</span>` : `<span class="none">尚未开始学习</span>`;
+  $("#recentTopic").innerHTML = (cur+items) || (cur || emptyTxt);
+  const lb=$("#dRecent"); if(lb) lb.innerHTML=state.topic?`<b>${escapeHtml(state.topic)}</b>`:`<span class="none">尚未开始学习</span>`;
+}
+if($("#recentFilter")) $("#recentFilter").addEventListener("input",renderRecent);
+/* 点击记录：按 学科::主题(sid) 恢复对应会话存档——每条学习记录都是独立可进入的聊天页面 */
+function resumeRecord(sid){
+  if(!sid) return;
+  if(state.busy){ toast("请等当前回复完成后再切换"); return; }
+  const h=loadStore()[sid];
+  if(!h || !h.started){ toast("该会话不存在或已被清空","err"); return; }
+  const topic=h.topic||"学习会话";
+  if(currentSid()===sid){ toast("当前已在该会话中：『"+topic+"』"); scrollDown(); const inp=$("#input"); if(inp) inp.focus(); return; }
+  if(state.hasStarted || stream.childElementCount) persistSession(); // 归档当前会话
+  if(h.subject!==state.subject){
+    state.subject=h.subject; renderSubj(); syncCtx(); syncWelcome();
+  }
+  loadSession(sid); // 按 sid 从存档恢复目标会话（消息流+画像+阶段）
+  toast("已进入学习会话：『"+topic+"』（"+h.subject+"）");
+  renderRecent(); scrollDown();
+  const inp=$("#input"); if(inp) inp.focus();
+}
+document.addEventListener("click",e=>{
+  const el=e.target.closest(".recent-item[data-sid]");
+  if(!el) return;
+  resumeRecord(el.dataset.sid);
+});
+
+/* ============ 输入： chips / 发送态 ============ */
+function renderChips(){
+  const row=$("#chipsRow"); row.innerHTML="";
+  pendingFiles.forEach((f,i)=>{
+    const c=document.createElement("span"); c.className="fchip";
+    c.innerHTML=`${f.file.type.startsWith("image/")?"图片":"语音"} · ${escapeHtml(f.file.name.slice(0,10))}
+      <button aria-label="移除附件"><svg class="icon" style="width:14px;height:14px"><use href="#i-x"/></svg></button>`;
+    c.querySelector("button").onclick=()=>{URL.revokeObjectURL(f.url);pendingFiles.splice(i,1);renderChips();updateSendState();};
+    row.appendChild(c);
+  });
+}
+function updateSendState(){
+  const ok=canSend() && !state.busy;
+  $("#sendBtn").disabled=!ok;
+}
+$("#input").addEventListener("input",()=>{
+  $("#input").style.height="auto";
+  $("#input").style.height=Math.min($("#input").scrollHeight,130)+"px";
+  updateSendState();
+});
+$("#input").addEventListener("keydown",e=>{
+  if(e.key==="Enter" && !e.shiftKey){e.preventDefault(); if(canSend()) doSend();}
+});
+$("#sendBtn").onclick=doSend;
+
+function doSend(){
+  const t=$("#input").value.trim();
+  if(!canSend()) return;
+  window.__lastQuick=null; // 手动输入：清除快捷入口残留，按当前输入重新推断剧本，避免旧入口"鬼上身"
+  const files=pendingFiles.slice();
+  send(t, files);
+}
+$("#stopBtn").onclick=()=>{state.stopped=true; if(state.ac){try{state.ac.abort();}catch(e){}}};
+/* 跨学科开关（桌面左栏）：同步状态与顶栏上下文；抽屉版在 syncDrawers 中单独绑定 */
+$("#crossMode").onchange=e=>{state.cross=e.target.checked; syncCtx(); toast(state.cross?"已开启跨学科模式":"已关闭跨学科模式");};
+
+/* ============ 附件菜单 ============ */
+const addBtn=$("#addBtn"), addPop=$("#addPop");
+addBtn.onclick=()=>{const s=addPop.classList.toggle("show");addBtn.setAttribute("aria-expanded",s);};
+document.addEventListener("click",e=>{ if(!e.target.closest(".add-menu")) addPop.classList.remove("show"); });
+addPop.querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    const act=b.dataset.act;
+    addPop.classList.remove("show"); addBtn.setAttribute("aria-expanded","false");
+    if(act==="image"){ $("#fileInput").click(); }
+  };
+});
+function handleFiles(list){
+  [...list].forEach(f=>{
+    if(!(f.type.startsWith("image/")||f.type.startsWith("audio/"))){ toast("仅支持图片或音频文件","err"); return; }
+    if(f.size>8*1024*1024){ toast("文件超过 8MB，请压缩后再上传","err"); return; }
+    if(pendingFiles.length>=5){ toast("最多同时附带 5 个文件","err"); return; }
+    pendingFiles.push({file:f, url:URL.createObjectURL(f)});
+  });
+  renderChips(); updateSendState();
+}
+$("#fileInput").onchange=e=>{handleFiles(e.target.files); e.target.value="";};
+
+/* 语音按钮：优先后端离线转写（Windows SAPI，全程不联网）；无后端时降级浏览器 Web Speech */
+let speechRec=null, lastFinal="";
+let micMeB=null, micWelcomePrev="", recTimer=0, asrBusy=false;
+let recCtx=null, recStream=null, recChunks=[], recNode=null, recSrc=null;
+let recPeak=0, recMeter=0; // 录音期间监测麦克风音量，用于判断设备是否真的有声
+let asrOK=null; // null=未知；true=后端离线转写可用
+let asrLiveOK=null, liveMode=false; // live=后端 WinRT DNN 新一代引擎实时听写
+async function checkAsr(){
+  try{ const b=await apiBase(); if(b===null){ asrOK=false; asrLiveOK=false; return false; }
+    const r=await fetch(b+"/api/health"); const j=await r.json(); asrOK=!!j.asr; asrLiveOK=!!j.asr_live; }
+  catch(e){ asrOK=false; asrLiveOK=false; }
+  return asrOK||asrLiveOK;
+}
+function initSpeech(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return null;
+  const r=new SR(); r.lang="zh-CN"; r.interimResults=true; r.continuous=false; r.maxAlternatives=1;
+  return r;
+}
+
+/* ---- 纯前端录音：采集 PCM，停止时编码为 16k/16bit/单声道 WAV ---- */
+async function startLocalRec(){
+  recStream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});
+  recCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(recCtx.state!=="running"){ await recCtx.resume(); } // 关键：suspended 状态下采集到的全是静音
+  recSrc=recCtx.createMediaStreamSource(recStream);
+  recChunks=[]; recPeak=0;
+  recNode=recCtx.createScriptProcessor(4096,1,1);
+  recNode.onaudioprocess=e=>{
+    const d=e.inputBuffer.getChannelData(0);
+    recChunks.push(new Float32Array(d));
+    let m=0; for(let i=0;i<d.length;i+=16){ const a=Math.abs(d[i]); if(a>m)m=a; }
+    if(m>recPeak) recPeak=m;
+  };
+  recSrc.connect(recNode); recNode.connect(recCtx.destination);
+}
+function stopLocalRec(){
+  const sr=recCtx.sampleRate;
+  const total=recChunks.reduce((n,c)=>n+c.length,0);
+  const all=new Float32Array(total); let off=0;
+  recChunks.forEach(c=>{ all.set(c,off); off+=c.length; });
+  try{ recNode.disconnect(); recSrc.disconnect(); }catch(e){}
+  recStream.getTracks().forEach(t=>t.stop());
+  recCtx.close(); recCtx=null;
+  // 预增强：去直流 + 峰值归一（录音偏轻是离线引擎听不准的主因之一）
+  let mean=0,cnt=0; for(let i=0;i<total;i+=8){ mean+=all[i]; cnt++; } mean=cnt?mean/cnt:0;
+  let peak=0; for(let i=0;i<total;i++){ const a=Math.abs(all[i]-mean); if(a>peak)peak=a; }
+  const gain=Math.min(10, peak>1e-4 ? 0.9/peak : 1);
+  // 重采样到 16kHz（分段平均，防混叠）
+  const ratio=sr/16000, n0=Math.floor(total/ratio);
+  let pcm=new Int16Array(n0);
+  for(let i=0;i<n0;i++){
+    const s0=Math.floor(i*ratio), s1=Math.max(s0+1,Math.floor((i+1)*ratio));
+    let sum=0; for(let j=s0;j<s1;j++) sum+=all[j];
+    let v=(sum/(s1-s0)-mean)*gain; v=Math.max(-1,Math.min(1,v));
+    pcm[i]=v<0? v*0x8000 : v*0x7FFF;
+  }
+  // 切掉首尾静音，减少引擎误判
+  const th=650; let a0=0,b0=n0;
+  while(a0<n0 && Math.abs(pcm[a0])<th) a0++;
+  while(b0>a0 && Math.abs(pcm[b0-1])<th) b0--;
+  if(b0>a0) pcm=pcm.slice(a0,b0);
+  const n=pcm.length;
+  const buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
+  const ws=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  ws(0,"RIFF"); dv.setUint32(4,36+n*2,true); ws(8,"WAVE"); ws(12,"fmt ");
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,16000,true); dv.setUint32(28,32000,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  ws(36,"data"); dv.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++) dv.setInt16(44+i*2,pcm[i],true);
+  return buf;
+}
+function micResetUI(){
+  clearInterval(recMeter);
+  state.recording=false; $("#micBtn").classList.remove("rec");
+  $("#micBtn").innerHTML=`<svg class="icon" style="width:16px;height:16px"><use href="#i-mic"/></svg>语音提问`;
+}
+function micCleanup(){
+  if(micMeB&&micMeB.isConnected) micMeB.parentElement.remove();
+  $("#welcome").style.display=micWelcomePrev;
+}
+/* 回放刚录的 WAV（识别失败时让用户亲耳确认麦克风有没有采到声） */
+async function playWavBuf(buf){
+  try{
+    const c=new (window.AudioContext||window.webkitAudioContext)();
+    if(c.state!=="running"){ await c.resume(); }
+    const ab=await c.decodeAudioData(buf.slice(0));
+    const s=c.createBufferSource(); s.buffer=ab; s.connect(c.destination); s.start();
+    toast("正在回放刚才的录音…");
+  }catch(e){ toast("无法回放："+(e&&e.message||e)); }
+}
+/* 停止录音 → 送后端离线转写 → 文本进入对话管线 */
+async function stopAndRecognizeLocal(){
+  asrBusy=true;
+  let wav=null;
+  try{ wav=stopLocalRec(); }catch(e){ micResetUI(); asrBusy=false; micCleanup(); showErr("录音异常结束，请重试或改用文字输入。"); return; }
+  micResetUI();
+  if(micMeB&&micMeB.isConnected) micMeB.innerHTML=`<span class="none">识别中（离线，不联网）…</span>`;
+  try{
+    const b=await apiBase();
+    if(b===null){ micCleanup(); showErr("语音服务不可用（未启动后端），请改用文字输入。"); asrBusy=false; return; }
+    const r=await fetchT(b+"/api/asr",{method:"POST",headers:{"Content-Type":"audio/wav"},body:wav},15000);
+    const j=await r.json();
+    const txt=(j&&j.text||"").trim();
+    if(txt){
+      micCleanup();
+      window.__lastQuick=null; // 语音输入等同自由输入：剧本模式走预设案例引导，不误触剧本
+      send(txt, []);
+    }else{
+      const d=(j&&j.debug)||{};
+      let hint="";
+      if(typeof d.peak==="number" && d.peak<0.005){
+        hint="麦克风没有采集到声音（音量≈0，时长 "+(d.seconds||0)+" 秒）。请检查：① 系统是否静音/麦克风音量是否调到最低；② Windows 设置→声音→输入 里选中的设备是否正确；③ 浏览器是否被禁止使用麦克风。";
+      }else if(typeof d.peak==="number" && d.peak<0.06){
+        hint="采集到的声音太小（音量峰值仅 "+d.peak+"），识别引擎无法听清。请靠近麦克风、提高音量后重试。";
+      }else if(d.stage){
+        // 服务端已把 SAPI 诊断映射为稳定阶段码；这里给出可操作的中文提示
+        const stageTxt = d.stage==="no_recognizer" ? "本机未安装可用的中文语音识别引擎（Windows 语音识别组件缺失）"
+          : d.stage==="timeout" ? "语音识别超时"
+          : d.stage==="not_windows" ? "当前系统不支持本地离线识别"
+          : d.stage==="engine_err" ? "语音识别引擎异常（原始信息："+(d.raw||d.stage)+"）"
+          : ("引擎诊断："+d.stage);
+        hint=stageTxt+"（音频 "+(d.seconds||0)+" 秒，音量峰值 "+(d.peak!=null?d.peak:"?")+(d.rate?"，采样率 "+d.rate:"")+"）。";
+        if(d.stage==="no_recognizer") hint+="可重新点『语音提问』改用浏览器实时语音识别，或直接用文字输入。";
+      }else{
+        hint="没有听清，请靠近麦克风重试，或改用文字输入。";
+      }
+      // 保留气泡：显示诊断 + 试听按钮，让用户亲耳确认麦克风有没有采到声
+      if(micMeB&&micMeB.isConnected){
+        micMeB.innerHTML="";
+        const sp=document.createElement("span"); sp.className="none"; sp.textContent=hint;
+        const btn=document.createElement("button"); btn.type="button";
+        btn.textContent="▶ 试听刚才的录音";
+        btn.style.cssText="display:block;margin-top:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#1f4fb0;font-weight:600;border:1px solid #b8cdf5;border-radius:8px;background:#eef4ff";
+        btn.onclick=()=>playWavBuf(wav);
+        micMeB.appendChild(sp); micMeB.appendChild(btn);
+      }else{
+        showErr((j&&j.error)?("离线转写失败："+j.error):hint);
+        micCleanup();
+      }
+    }
+  }catch(e){
+    showErr("离线转写服务异常（"+(e&&e.message||e)+"），可改用文字输入。");
+    micCleanup();
+  }
+  asrBusy=false;
+}
+/* ---- live 路径：后端 DNN 引擎实时听写，停止时取回文本 ---- */
+async function stopLiveRec(){
+  asrBusy=true; micResetUI();
+  liveMode=false;
+  try{
+    const b=await apiBase();
+    if(b===null){ micCleanup(); showErr("语音服务不可用（未启动后端），请改用文字输入。"); asrBusy=false; return; }
+    const r=await fetchT(b+"/api/asr_live/stop",{method:"POST"},15000);
+    const j=await r.json();
+    const txt=(j&&j.text||"").trim();
+    if(txt){
+      micCleanup();
+      window.__lastQuick=null; // 语音输入等同自由输入：剧本模式走预设案例引导，不误触剧本
+      send(txt, []);
+    }else{
+      micCleanup();
+      showErr("没有听清，请靠近麦克风、说得响一点再试，或改用文字输入。");
+    }
+  }catch(e){
+    micCleanup();
+    showErr("语音服务异常（"+(e&&e.message||e)+"），可改用文字输入。");
+  }
+  asrBusy=false;
+}
+$("#micBtn").onclick=async ()=>{
+  if(asrBusy){ toast("正在识别，请稍候"); return; }
+  if(state.recording){ // 停止
+    clearTimeout(recTimer);
+    if(liveMode){ stopLiveRec(); return; } // live 路径：后端 DNN 引擎实时识别
+    if(recCtx){ stopAndRecognizeLocal(); return; } // 录音路径：停止 → 离线识别
+    micResetUI();
+    if(speechRec){ try{speechRec.stop();}catch(e){} }
+    return;
+  }
+  if(asrOK!==true&&asrLiveOK!==true) await checkAsr(); // 每次点击都重新探测：避免后端重启/首次探测失败被永久缓存
+  if(location.protocol==="file:" && asrOK!==true && asrLiveOK!==true){
+    // Edge/Chrome 在 file:// 下可能允许 getUserMedia，却拒绝 Web Speech（not-allowed）。
+    // 在请求麦克风前明确阻断，避免首次弹权限、随后仍失败且后续无提示的假录音体验。
+    $("#devStatus").className="dev off"; $("#devText").textContent="语音需启动本地服务";
+    $("#micBtn").title="双击 start.bat 后从 http://localhost:8000 打开";
+    showErr("当前以 file:// 直接打开，Edge 无法在此模式稳定完成语音转写。请关闭此页，双击项目根目录的 start.bat，并在自动打开的 http://localhost:8000 页面中使用『语音提问』。");
+    return;
+  }
+  if(asrLiveOK){ // live 路径：后端调 Windows 新一代 DNN 引擎实时听麦克风，准确率更高，且无需浏览器麦克风权限
+    micMeB=addMsg("me"); micMeB.innerHTML=`<span class="none">正在连接语音引擎…</span>`;
+    micWelcomePrev=$("#welcome").style.display;
+    $("#welcome").style.display="none";
+    let ok=false;
+    try{ const b=await apiBase(); const r=await fetchT(b+"/api/asr_live/start",{method:"POST"},15000); const j=await r.json(); ok=!!j.ok; }catch(e){ ok=false; }
+    if(ok){
+      liveMode=true; state.recording=true; $("#micBtn").classList.add("rec");
+      $("#micBtn").innerHTML=`<svg class="icon" style="width:16px;height:16px"><use href="#i-mic-off"/></svg>停止录音`;
+      micMeB.innerHTML=`<span class="none">正在聆听… 请说话，说完点『停止录音』</span>`;
+      recTimer=setTimeout(()=>{ if(state.recording) $("#micBtn").click(); }, 30000); // 30 秒自动停止
+      return;
+    }
+    micCleanup(); // live 引擎不可用，降级录音路径
+  }
+  if(!micAvailable){ showErr("设备未连接：未检测到麦克风，无法语音提问。请在系统设置中允许麦克风后点『重新检测设备』。"); return; }
+  if(!micGranted){ const ok=await ensureMicAccess(); if(!ok) return; }
+  lastFinal="";
+  micMeB=addMsg("me"); micMeB.innerHTML=`<span class="none">听写中…</span>`;
+  micWelcomePrev=$("#welcome").style.display;
+  $("#welcome").style.display="none";
+  if(asrOK){ // 离线转写路径：前端录音 + 后端 SAPI 识别，全程不联网
+    try{ await startLocalRec(); }
+    catch(e){ micCleanup(); showErr("无法开始录音："+(e&&e.message||e)+"。请检查麦克风权限，或改用文字输入。"); return; }
+    state.recording=true; $("#micBtn").classList.add("rec");
+    $("#micBtn").innerHTML=`<svg class="icon" style="width:16px;height:16px"><use href="#i-mic-off"/></svg>停止录音`;
+    micMeB.innerHTML=`<span class="none">录音中… 点『停止录音』结束并识别</span>`;
+    recMeter=setInterval(()=>{ if(micMeB&&micMeB.isConnected){ const pct=Math.min(100,Math.round(recPeak*300));
+      micMeB.innerHTML=`<span class="none">录音中… 麦克风音量 ${pct}%（一直 0% 说明设备无声）｜点『停止录音』结束</span>`; } },500);
+    recTimer=setTimeout(()=>{ if(state.recording) $("#micBtn").click(); }, 30000); // 30 秒自动停止
+    return;
+  }
+  // 无后端：降级浏览器 Web Speech（需联网访问厂商识别服务）
+  speechRec=initSpeech();
+  if(!speechRec){
+    micCleanup();
+    showErr("当前浏览器不支持实时语音转写（Web Speech API）。可用 Chrome/Edge，或改用文字输入。"); return;
+  }
+  state.recording=true; $("#micBtn").classList.add("rec");
+  $("#micBtn").innerHTML=`<svg class="icon" style="width:16px;height:16px"><use href="#i-mic-off"/></svg>停止录音`;
+  speechRec.onresult=e=>{
+    let interim="", final="";
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=t; else interim+=t;
+    }
+    if(final) lastFinal+=final;
+    micMeB.innerHTML=md(lastFinal||interim);
+  };
+  speechRec.onerror=e=>{
+    micResetUI();
+    const code=(e && e.error)||"未知错误";
+    if(code==="network"){
+      // 联网识别不可达：重新探测本地离线引擎（可能刚启动/刚恢复），引导重试
+      checkAsr().then(ok=>{
+        showErr(ok
+          ? "在线语音服务不可达，但本地离线识别已就绪：请再点一次『语音提问』即可。"
+          : "语音转写失败：浏览器在线识别需联网且当前不可达，且未检测到本地后端。请确认通过 http://localhost:8000 打开本页面（由 python server.py 提供服务），即可使用离线语音识别。");
+      });
+    }else{
+      showErr("语音转写失败："+code+"。可改用文字输入。");
+    }
+    // 没有任何转写结果：移除“听写中”整条空气泡，恢复录音前的欢迎区状态
+    if(!(lastFinal||"").trim()){ micCleanup(); }
+  };
+  speechRec.onend=()=>{
+    micResetUI();
+    const txt=(lastFinal||"").trim();
+    if(txt){
+      micCleanup(); // send 会渲染正式用户气泡，移除听写气泡避免重复
+      window.__lastQuick=null; // 语音输入等同自由输入：剧本模式走预设案例引导，不误触剧本
+      send(txt, []);
+    } else {
+      micCleanup(); // 没听清则移除整条空气泡
+    }
+  };
+  try{ speechRec.start(); }catch(e){ /* 部分浏览器重复 start 报错，忽略 */ }
+};
+
+/* ============ 快速开始入口 ============ */
+$("#quick").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-q]"); if(!btn) return;
+  const q=btn.dataset.q;
+  if(q==="demo"){ openDemo(); return; }
+  const g=SUBJECT_GUIDE[state.subject]||SUBJECT_GUIDE["数学"];
+  let prompt = q==="learn" ? g.starter : "继续上次的学习任务。";
+  if(q==="continue" && state.topic) prompt = "继续上次的学习任务：主题「"+state.topic+"」。";
+  window.__lastQuick=q;
+  send(prompt, []);
+});
+
+/* ============ 演示面板（斜率可视化）单独弹层 ============ */
+function openDemo(){
+  if($("#demoOverlay")){ $("#demoOverlay").remove(); }
+  const ov=document.createElement("div"); ov.className="modal"; ov.id="demoOverlay";
+  ov.innerHTML=`<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="demoTitle" style="width:min(520px,92vw)">
+    <h3 id="demoTitle">体验：用图像理解一次函数斜率（预设演示案例）</h3>
+    <p style="color:var(--sub);font-size:13px">拖动滑块改变 k，观察直线方向如何随斜率变化——这正是知教帮你建立『公式↔图像』联系的方式。</p>
+    <svg viewBox="0 0 320 160" style="width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md)">
+      <path d="M20 80H300" stroke="#cdd8e6"/><path d="M160 14V146" stroke="#cdd8e6"/>
+      <path id="dLine" stroke="var(--brand)" stroke-width="3" fill="none" d="M20 80 L300 80"/>
+    </svg>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+      <label for="dSlider" style="font-size:14px;white-space:nowrap">斜率 k = <b class="tabnum" id="dK">0</b></label>
+      <input type="range" id="dSlider" min="-4" max="4" step="0.5" value="0" style="flex:1" aria-label="斜率 k 滑块" aria-valuetext="k=0，水平线">
+    </div>
+    <div id="dHint" style="font-size:13px;color:var(--sub);margin-top:6px">水平线（k=0）</div>
+    <div class="modal-act">
+      <button class="btn ghost" id="dClose">关闭</button>
+      <button class="btn" id="dUse">用这个例子向我讲解</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  const draw=()=>{const k=parseFloat($("#dSlider").value);$("#dK").textContent=k;
+    const y=80-k*16; $("#dLine").setAttribute("d",`M20 80 L300 ${y}`);
+    const hint=k===0?"水平线（k=0）":(k>0?`向右上升（k=${k}）`:`向右下降（k=${k}）`);
+    $("#dHint").textContent=hint; $("#dSlider").setAttribute("aria-valuetext","k="+k+"，"+hint);};
+  $("#dSlider").oninput=draw; draw();
+  $("#dClose").onclick=()=>closeTrapped(ov);
+  ov.onclick=e=>{if(e.target===ov) closeTrapped(ov);};
+  $("#dUse").onclick=()=>{
+    const k=parseFloat($("#dSlider").value); // 关闭弹窗前先保存 k：后续消息/图像/讲解全程用同一个 k
+    closeTrapped(ov);
+    demoK=k; window.__lastQuick="demo";
+    send("用 k="+k+" 这个例子向我讲解斜率和图像的关系", []);
+  };
+  openTrapped(ov);
+}
+
+/* ============ 补充学习背景 ============ */
+const editModal=document.createElement("div"); editModal.className="modal"; editModal.id="editModal";
+editModal.innerHTML=`<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="et">
+  <h3 id="et">补充学习背景</h3>
+  <p>这些信息会随每次提问发给知教，帮助它更懂你的学习方式。</p>
+  <textarea id="editText" placeholder="例如：对斜率概念容易混淆，更喜欢图像化讲解"></textarea>
+  <div class="modal-act"><button class="btn ghost" id="editCancel">取消</button>
+    <button class="btn" id="editSave">保存</button></div>
+</div>`;
+document.body.appendChild(editModal);
+function openProfileEdit(opener){ $("#editText").value=state.profile; openTrapped(editModal, opener); }
+$("#editCancel").onclick=()=>closeTrapped(editModal);
+$("#editSave").onclick=()=>{state.profile=$("#editText").value.trim();closeTrapped(editModal);toast("学习背景已保存");};
+
+/* ============ 页脚：关于 / 反馈 ============ */
+$("#aboutBtn").onclick=e=>openTrapped($("#aboutModal"), e.currentTarget);
+$("#aboutClose").onclick=()=>closeTrapped($("#aboutModal"));
+$("#aboutModal").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeTrapped(e.currentTarget); });
+
+/* ============ 页面内配置 API Key（无需编辑 .env） ============ */
+const keyModal=$("#keyModal");
+function openKeyModal(opener){ $("#keyInput").value=""; $("#keyHint").textContent=""; openTrapped(keyModal, opener); }
+$("#keyBtn").onclick=e=>openProviderModal(e.currentTarget);
+/* ============ 配置模型：提供方管理（预设/自定义；OpenAI 兼容 / Anthropic 兼容） ============ */
+const providerModal=$("#providerModal");
+let _pvPresets=[];
+function openProviderModal(opener){ openTrapped(providerModal, opener); refreshProviders(); }
+$("#pvClose").onclick=()=>closeTrapped(providerModal);
+$("#providerModal").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeTrapped(providerModal); });
+async function pvApi(action, body){
+  const b=await apiBase(); if(b===null) return {ok:false, msg:"未检测到本地服务：请确认服务已通过 start.bat 启动（http://localhost:8000），并用该地址打开页面（不要用 file://）。"};
+  try{
+    const url=b+"/api/providers"+(action?("/"+action):"");
+    // 有 body 或指定了 action 时用 POST；纯列表刷新才用 GET（GET 不能带 body）
+    const usePost = !!(body || action);
+    const r=await fetchT(url, {method: usePost?"POST":"GET", headers:{"Content-Type":"application/json"}, body: body?JSON.stringify(body):undefined}, 10000);
+    let j=null;
+    try{ j=await r.json(); }catch(e){ j=null; }
+    if(!r.ok && !j) return {ok:false, msg:"接口异常（HTTP "+r.status+"），请查看服务窗口日志"};
+    return j;
+  }catch(e){ return {ok:false, msg:"网络请求失败："+(e&&e.message||e)}; }
+}
+function pvRow(p, active){
+  const protoTxt = p.protocol==="anthropic" ? "Anthropic 兼容" : "OpenAI 兼容";
+  const actBtn = active
+    ? `<span class="recent-now" style="margin-left:auto">当前使用</span>`
+    : `<button type="button" class="err-retry" data-pv="select" data-id="${escapeHtml(p.id)}" style="margin-left:auto">设为当前</button>`;
+  return `<div class="recent-item" style="align-items:center"><b>${escapeHtml(p.name)}</b><span class="recent-ts">${protoTxt} · ${escapeHtml(p.model||"默认模型")} · ${p.key_set?"已填Key":"未填Key"}${p.vision?" · 多模态":""}</span>${actBtn}<button type="button" class="err-retry" data-pv="test" data-id="${escapeHtml(p.id)}" style="margin-left:6px">测试</button><button type="button" class="err-retry" data-pv="remove" data-id="${escapeHtml(p.id)}" style="margin-left:6px">删除</button></div>`;
+}
+async function refreshProviders(){
+  const box=$("#pvList"); const hint=$("#pvHint");
+  const j=await pvApi(null, null);
+  if(!j || !j.list || j.ok===false){
+    box.innerHTML='<span class="none">无法获取提供方列表</span>';
+    if(j && j.msg) hint.textContent=j.msg;
+    return;
+  }
+  _pvPresets=j.presets||[];
+  const sel=$("#pvPreset");
+  sel.innerHTML=_pvPresets.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}（${escapeHtml(p.base)}）</option>`).join("")||"";
+  box.innerHTML = j.list.length
+    ? j.list.map(p=>pvRow(p, p.id===j.active)).join("")
+    : '<span class="none">尚未添加提供方——可用上方「预设」快速接入 DeepSeek，或添加自定义提供方。</span>';
+  box.onclick=async e=>{
+    const btn=e.target.closest("[data-pv]"); if(!btn) return;
+    const id=btn.dataset.id;
+    if(btn.dataset.pv==="select"){ const r=await pvApi("select",{id}); if(r&&r.ok){ await checkBackend(); refreshProviders(); toast("已切换模型提供方"); } }
+    else if(btn.dataset.pv==="test"){ await testProvider(id); }
+    else if(btn.dataset.pv==="remove"){ const r=await pvApi("remove",{id}); if(r&&r.ok){ await checkBackend(); refreshProviders(); toast("已删除提供方"); } }
+  };
+}
+async function testProvider(pid){
+  const hint=$("#pvHint");
+  hint.textContent="正在测试连接…";
+  const r=await pvApi("test", {id:pid});
+  if(!r || r.ok===false){ hint.textContent=(r&&r.msg)||"测试失败：无法连接本地服务。"; return false; }
+  if(r.ok){ hint.textContent="✅ 连接正常："+r.model+"（"+(r.url||"")+"）"; return true; }
+  hint.textContent="❌ 连接失败："+(r.error||"未知错误")+(r.detail?("："+String(r.detail).slice(0,150)):"")+"；URL："+(r.url||"?");
+  return false;
+}
+$("#pvAddPreset").onclick=async ()=>{
+  const pid=$("#pvPreset").value; const key=$("#pvPresetKey").value.trim();
+  const hint=$("#pvHint");
+  if(!key){ hint.textContent="请先填入 API Key。"; return; }
+  if(!/^[A-Za-z0-9_-]{10,}$/.test(key)){ hint.textContent="Key 格式不正确：应只包含字母、数字、- 和 _（检查是否混入空格/中文）。"; return; }
+  const preset=_pvPresets.find(p=>p.id===pid);
+  if(!preset){ hint.textContent="预设不存在。"; return; }
+  const r=await pvApi(null, {provider:{id:preset.id, name:preset.name, base:preset.base, protocol:preset.protocol, model:preset.model, api_key:key}});
+  if(r&&r.ok){ hint.textContent=""; $("#pvPresetKey").value=""; await checkBackend(); refreshProviders(); toast("已添加并使用："+preset.name); testProvider(preset.id); }
+  else hint.textContent=(r&&r.msg)||"添加失败，请检查服务是否运行。";
+};
+$("#pvAddCustom").onclick=async ()=>{
+  const hint=$("#pvHint");
+  const provider={
+    id:$("#pvId").value.trim(), name:$("#pvName").value.trim(),
+    base:$("#pvBase").value.trim(), protocol:$("#pvProto").value,
+    model:$("#pvModel").value.trim(), api_key:$("#pvKey").value.trim(),
+    vision: !!($("#pvVision")&&$("#pvVision").checked),
+  };
+  if(!provider.id || !provider.base){ hint.textContent="请填写 Provider ID 和 API 地址。"; return; }
+  if(provider.api_key && !/^[A-Za-z0-9_-]{10,}$/.test(provider.api_key)){ hint.textContent="API 密钥格式不正确：应只包含字母、数字、- 和 _。"; return; }
+  const r=await pvApi(null, {provider});
+  if(r&&r.ok){ hint.textContent=""; ["pvId","pvName","pvBase","pvModel","pvKey"].forEach(id=>{ const el=$("#"+id); if(el) el.value=""; }); if($("#pvVision")) $("#pvVision").checked=false; await checkBackend(); refreshProviders(); toast("已添加并使用："+provider.name); testProvider(provider.id); }
+  else hint.textContent=(r&&r.msg)||"添加失败，请检查服务是否运行。";
+};
+/* 手动保存学习进展：立即把当前学科会话/画像/历史落盘并如实提示 */
+function saveProgress(){
+  if(!state.hasStarted && !stream.childElementCount){ toast("当前还没有可保存的学习内容","err"); return; }
+  const ok = persistSession(); renderRecent();
+  toast(ok ? "学习进展已保存到本地浏览器" : "保存失败：浏览器本地存储不可用（如隐私模式），已尝试同步服务端","err");
+}
+$("#saveBtn").onclick=saveProgress;
+$("#keyCancel").onclick=()=>closeTrapped(keyModal);
+$("#keyModal").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeTrapped(e.currentTarget); });
+async function setRuntimeKey(k){
+  const b=await apiBase();
+  if(b===null){ return {ok:false, msg:"未检测到本地服务：请先用 start.bat 启动服务（http://localhost:8000），再从页面配置 Key。"}; }
+  try{
+    const r=await fetchT(b+"/api/config",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({api_key:k})},8000);
+    if(!r.ok){
+      if(r.status===404){ return {ok:false, msg:"后端版本过旧（无 /api/config）：请确认运行的是「知教_GOAI_汇总版」的 server.py——先关闭占用 8000 等端口的旧 python 进程，再启动新服务并刷新页面。"}; }
+      return {ok:false, msg:"配置接口异常（HTTP "+r.status+"）"};
+    }
+    const j=await r.json();
+    return {ok:!!j.ok, msg:j.msg||""};
+  }catch(e){ return {ok:false, msg:"配置失败："+(e&&e.message||e)}; }
+}
+$("#keySave").onclick=async ()=>{
+  const k=$("#keyInput").value.trim();
+  if(!k){ $("#keyHint").textContent="请输入 Key（sk- 开头）后再保存。"; return; }
+  if(!/^[A-Za-z0-9_-]{10,}$/.test(k)){
+    $("#keyHint").textContent="Key 格式不正确：应只包含字母、数字、- 和 _（请检查是否粘贴时混入了空格或中文），请重新复制后再试。";
+    return;
+  }
+  const st=$("#keySave"); st.disabled=true; st.textContent="保存中…"; $("#keyHint").textContent="";
+  const r=await setRuntimeKey(k);
+  st.disabled=false; st.textContent="保存并启用";
+  if(r.ok){
+    $("#keyHint").textContent="";
+    closeTrapped(keyModal);
+    await checkBackend();
+    if(backendOK){ toast("已启用真实模型模式"); }
+    else { toast("Key 已保存，但模型探测未通过，请检查 Key 是否有效","err"); }
+  } else {
+    $("#keyHint").textContent=r.msg;
+  }
+};
+$("#keyClear").onclick=async ()=>{
+  const st=$("#keyClear"); st.disabled=true;
+  const r=await setRuntimeKey("");
+  st.disabled=false;
+  if(r.ok){ closeTrapped(keyModal); await checkBackend(); toast("已清除页面配置的 Key"+(backendOK?"（仍在使用 .env 中的 Key）":"")); }
+  else { $("#keyHint").textContent=r.msg; }
+};
+
+/* ============ 新建对话 ============ */
+function openNewChat(opener){$("#ncProfile").value=state.profile; openTrapped($("#newChatModal"), opener);}
+$("#newChatBtn").onclick=e=>openNewChat(e.currentTarget);
+$("#newChatBtn2").onclick=e=>openNewChat(e.currentTarget);
+$("#ncCancel").onclick=()=>closeTrapped($("#newChatModal"));
+$("#ncConfirm").onclick=async ()=>{
+  state.profile=$("#ncProfile").value.trim();
+  closeTrapped($("#newChatModal"));
+  if(state.busy){ state.stopped=true; if(state.ac){ try{state.ac.abort();}catch(e){} } } // 先中断进行中的生成，避免写入被清空的会话
+  // 全局新建对话：清空所有学科的会话存档与画像（内存与本地持久化），避免"只清当前学科"造成的困惑
+  for(const k of Object.keys(subjectSessions)) delete subjectSessions[k];
+  for(const k of Object.keys(stageMap)) delete stageMap[k];
+  saveStore({});
+  stream.innerHTML=""; profileData=null; state.topic=null; state.hasStarted=false;
+  renderRecent(); renderProfileEmpty();
+  // 重置画像抽屉
+  $("#rightDrawerBody").innerHTML="";
+  // 后端：不传 subject 即清空全部学科上下文（无后端时不发请求，避免控制台报错）
+  if(backendOK!==false){ const b=await apiBase(); if(b!==null){ try{await fetchT(b+"/api/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})},8000);}catch(e){} } }
+  $("#welcome").style.display=""; syncWelcome();
+  toast("已新建对话并清空学习记录");
+};
+
+/* ============ 折叠左栏（桌面） ============ */
+$("#leftToggle").onclick=()=>{
+  const lay=$("#layout"); const c=lay.classList.toggle("left-collapsed");
+  $("#leftToggle").setAttribute("aria-pressed", c);
+  $("#leftToggle").title=c?"展开设置栏":"折叠设置栏";
+};
+
+/* ============ 抽屉（移动/平板） ============ */
+function syncDrawers(){
+  // 左抽屉：重建可操作的年级/学科控件（事件绑定到主逻辑）
+  const lb=$("#leftDrawerBody");
+  lb.innerHTML=`
+    <div class="field"><label>学段 / 年级</label><div class="seg" id="dGradeSeg"></div></div>
+    <div class="field"><label>当前学科</label><div class="subj-list" id="dSubjList"></div></div>
+    <div class="field"><div class="switch-row"><span class="lab">跨学科联合提问<small>真实模型：动态联合提问；剧本：预设提示</small></span>
+      <label class="switch"><input type="checkbox" id="dCross" ${state.cross?"checked":""}/><span class="track"></span><span class="knob"></span></label></div></div>
+    <div class="field"><label>最近学习记录</label><div class="recent" id="dRecent"></div></div>
+    <button class="btn ghost" id="dNewChat" style="width:100%"><svg class="icon"><use href="#i-reset"/></svg>新建对话</button>
+    <button class="btn ghost" id="dKey" style="width:100%;margin-top:8px"><svg class="icon"><use href="#i-key"/></svg>配置模型</button>
+    <button class="btn ghost" id="dSave" style="width:100%;margin-top:8px"><svg class="icon"><use href="#i-save"/></svg>保存当前学习进展</button>`;
+  const gseg=$("#dGradeSeg");
+  GRADES.forEach(g=>{const b=document.createElement("button");b.textContent=g;b.setAttribute("role","radio");
+    b.setAttribute("aria-checked", String(g===state.grade));
+    b.onclick=()=>{setGrade(g);syncDrawers();}; gseg.appendChild(b);});
+  const sl=$("#dSubjList");
+  SUBJECTS.forEach(s=>{const b=document.createElement("button");b.className="chip";b.textContent=s;
+    b.setAttribute("aria-checked", String(s===state.subject)); b.onclick=()=>{setSubject(s);syncDrawers();}; sl.appendChild(b);});
+  wireRadiogroup(gseg); wireRadiogroup(sl);
+  $("#dCross").onchange=e=>{state.cross=e.target.checked; syncCtx(); toast(state.cross?"已开启跨学科模式":"已关闭跨学科模式");};
+  $("#dRecent").innerHTML=state.topic?`<b>${escapeHtml(state.topic)}</b>`:`<span class="none">尚未开始学习</span>`;
+  $("#dNewChat").onclick=e=>{openNewChat(e.currentTarget);closeDrawers(false);};
+  $("#dKey").onclick=e=>openProviderModal(e.currentTarget);
+  $("#dSave").onclick=saveProgress;
+}
+function openDrawer(d){
+  $("#scrim").classList.add("show");
+  d.classList.add("show");
+  d._opener=document.activeElement;
+  const f=focusablesIn(d); (f[0]||d).focus();
+}
+function closeDrawers(restoreFocus){
+  $("#scrim").classList.remove("show");
+  $$(".drawer").forEach(d=>{
+    const wasOpen=d.classList.contains("show");
+    d.classList.remove("show");
+    if(restoreFocus!==false && wasOpen && d._opener && d._opener.focus && document.body.contains(d._opener)) d._opener.focus();
+    d._opener=null;
+  });
+}
+$("#leftTrigger").onclick=()=>{ openDrawer($("#leftDrawer")); syncDrawers(); };
+$("#rightTrigger").onclick=()=>{ openDrawer($("#rightDrawer")); };
+$("#scrim").onclick=()=>closeDrawers();
+$$("[data-close-drawer]").forEach(b=>b.onclick=()=>closeDrawers());
+
+/* ============ 弹窗焦点陷阱 + 全局关闭 ============ */
+/* 打开：焦点进弹窗；关闭：Esc/遮罩/按钮均可，关闭后焦点回到触发按钮 */
+function focusablesIn(el){ return [...el.querySelectorAll("button,input,textarea,select,a[href]")].filter(x=>!x.disabled&&x.offsetWidth>0); }
+function openTrapped(ov, opener){
+  ov._opener=opener||document.activeElement;
+  ov.classList.add("show");
+  const f=focusablesIn(ov); (f[0]||ov).focus();
+}
+function closeTrapped(ov){
+  if(!ov) return;
+  ov.classList.remove("show");
+  const op=ov._opener; ov._opener=null;
+  if(op && op.focus) op.focus();
+}
+function closeAllOverlays(){
+  addPop.classList.remove("show"); addBtn.setAttribute("aria-expanded","false");
+  const demo=$("#demoOverlay"); if(demo) closeTrapped(demo);
+  ["newChatModal","editModal","aboutModal","keyModal","providerModal"].forEach(id=>{const m=$("#"+id); if(m&&m.classList.contains("show")) closeTrapped(m);});
+  closeDrawers();
+}
+document.addEventListener("keydown",e=>{
+  // Tab 陷阱：焦点不得逃出当前弹窗/抽屉
+  const open=[...document.querySelectorAll(".modal.show, .drawer.show")];
+  const ov=open[open.length-1];
+  if(ov && e.key==="Tab"){
+    const f=focusablesIn(ov);
+    if(f.length){
+      const first=f[0], last=f[f.length-1];
+      if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+  }
+  if(e.key==="Escape") closeAllOverlays();
+});
+// 新建对话 / 编辑背景 弹窗：点击遮罩也可关闭（焦点回到触发按钮）
+$("#newChatModal").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeTrapped(e.currentTarget); });
+$("#editModal").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeTrapped(e.currentTarget); });
+
+/* ============ 全局兜底：未捕获错误 / 断网提示 ============ */
+let _errToastAt=0;
+window.addEventListener("error",e=>{
+  try{ console.error("[知教] 未捕获错误:", e.error||e.message||e); }catch(_){}
+  const now=Date.now();
+  if(now-_errToastAt>60000){ _errToastAt=now; try{ toast("页面出现异常，已记录，可刷新重试","err"); }catch(_){} }
+});
+window.addEventListener("unhandledrejection",e=>{
+  try{ console.error("[知教] 未处理 Promise 拒绝:", e.reason); }catch(_){}
+  const now=Date.now();
+  if(now-_errToastAt>60000 && !(e.reason&&e.reason.name==="AbortError")){ _errToastAt=now; try{ toast("操作未完成，请重试","err"); }catch(_){} }
+});
+window.addEventListener("offline",()=>{ toast("网络已断开，生成中的回复可能中断","err"); });
+window.addEventListener("online",()=>{ toast("网络已恢复"); checkBackend(); detectMic(); });
+
+/* ============ 主题：亮 / 暗 / 跟随系统（记忆到 localStorage） ============ */
+const THEME_KEY="zhijiao_theme"; // "light"|"dark"|"auto"
+const _mqDark=window.matchMedia?window.matchMedia("(prefers-color-scheme: dark)"):null;
+function applyTheme(){
+  let t="auto"; try{ t=localStorage.getItem(THEME_KEY)||"auto"; }catch(e){}
+  const dark = t==="dark" || (t==="auto" && !!(_mqDark&&_mqDark.matches));
+  document.documentElement.setAttribute("data-theme", dark?"dark":"light");
+  const btn=$("#themeBtn");
+  if(btn){
+    const use=btn.querySelector("use");
+    if(use) use.setAttribute("href", t==="auto"?"#i-theme-auto":(dark?"#i-sun":"#i-moon"));
+    const curTxt=t==="auto"?("跟随系统（当前"+(dark?"深色":"浅色")+"）"):(dark?"深色":"浅色");
+    btn.title="当前："+curTxt+"｜点击切换";
+    btn.setAttribute("aria-label", btn.title);
+  }
+}
+if($("#themeBtn")) $("#themeBtn").onclick=()=>{
+  let cur="auto"; try{ cur=localStorage.getItem(THEME_KEY)||"auto"; }catch(e){}
+  const next=cur==="auto"?"light":(cur==="light"?"dark":"auto");
+  try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+  applyTheme();
+  toast(next==="dark"?"已切换深色模式":(next==="light"?"已切换浅色模式":"已跟随系统（自动）"));
+};
+if(_mqDark) _mqDark.addEventListener("change",()=>{ let t="auto"; try{ t=localStorage.getItem(THEME_KEY)||"auto"; }catch(e){} if(t==="auto") applyTheme(); });
+applyTheme();
+
+/* ============ 初始化 ============ */
+// 升版迁移：主动移除旧 v1 存储（可能含测试残留/旧格式数据），避免被恢复出脏内容
+try{ localStorage.removeItem("zhijiao_sessions_v1"); localStorage.removeItem("zhijiao_history_v1"); }catch(e){}
+migrateStore(); // v2→v3 迁移：把旧版“每学科一段”转为话题级会话存档，保留既有学习数据
+renderGrade(); renderSubj(); syncCtx(); syncWelcome(); loadSession();
+if(state.hasStarted) setTimeout(()=>toast("已恢复上次的学习会话，可继续提问"), 300); // 恢复可见提示，避免误以为没生效
+try{ const _st=loadStore(); const _ks=Object.keys(_st).filter(k=>k!=="__meta"&&_st[k]&&_st[k].started); console.log("[store] 会话存档数：", _ks.length, "；", state.subject, "active：", activeSid(state.subject)||"无"); }catch(e){} // 排查辅助
+detectMic();
+checkBackend().then(ok=>{
+  if(ok){ restoreStoreFromServer().then(restored=>{
+    if(restored){ loadSession(); setTimeout(()=>toast("已从服务端恢复学习记录，可继续提问"), 400); }
+  }); }
+});
+updateSendState();
+
+</script>
+</body>
+</html>
